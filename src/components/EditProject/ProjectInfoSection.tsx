@@ -131,7 +131,7 @@ function KakenSearchPanel() {
       setValue("dmp.projectInfo.startYear", info.startYear)
       setValue("dmp.projectInfo.endYear", info.endYear)
     } else if (result.isSuccess && result.data === null) {
-      // no projects found — keep existing values, show nothing
+      showSnackbar("KAKEN番号に該当するプロジェクトが見つかりませんでした", "warning")
     } else if (result.isError) {
       showSnackbar("情報の取得に失敗しました", "error")
     }

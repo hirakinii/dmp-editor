@@ -23,7 +23,7 @@ import PersonInfoSection from "@/components/EditProject/PersonInfoSection"
 import ProjectInfoSection from "@/components/EditProject/ProjectInfoSection"
 import ProjectTableSection from "@/components/EditProject/ProjectTableSection"
 import OurCard from "@/components/OurCard"
-import { DmpFormValues } from "@/dmp"
+import { DmpFormValues, todayString } from "@/dmp"
 import { ProjectInfo } from "@/grdmClient"
 import { useSnackbar } from "@/hooks/useSnackbar"
 import { useUpdateDmp } from "@/hooks/useUpdateDmp"
@@ -53,7 +53,6 @@ const STEP_FIELDS: Record<number, FieldPath<DmpFormValues>[]> = {
     "dmp.metadata.revisionType",
     "dmp.metadata.submissionDate",
     "dmp.metadata.dateCreated",
-    "dmp.metadata.dateModified",
   ],
   1: [
     "dmp.projectInfo.fundingAgency",
@@ -95,7 +94,7 @@ function CustomStepIcon(props: StepIconProps) {
 export default function FormCard({ sx, isNew = false, user, project, projects }: FormCardProps) {
   const { projectId = "" } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
-  const { getValues, handleSubmit, formState, reset, trigger, setError } = useFormContext<DmpFormValues>()
+  const { getValues, setValue, handleSubmit, formState, reset, trigger, setError } = useFormContext<DmpFormValues>()
   const { isValid, isSubmitted } = formState
   const updateMutation = useUpdateDmp()
   const { showSnackbar } = useSnackbar()
@@ -133,6 +132,7 @@ export default function FormCard({ sx, isNew = false, user, project, projects }:
       return
     }
 
+    setValue("dmp.metadata.dateModified", todayString())
     const formValues = getValues()
     setSaveState("saving")
 

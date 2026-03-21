@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test:lint": "eslint .",
+    "test:lint": "eslint '{src,test}/**/*.{ts,tsx}' --fix",
     "test:typecheck": "tsc --noEmit",
     "test:vitest": "vitest run --root .",
     "ci": "npm run test:lint && npm run test:typecheck && npm run test:vitest && npm run build"

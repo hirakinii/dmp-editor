@@ -15,6 +15,8 @@ interface FormData {
   helperText?: string
   type: "text" | "date" | "select"
   options?: string[]
+  /** When true, the field is displayed but cannot be edited by the user. */
+  readOnly?: boolean
 }
 
 const formProps: FormData[] = [
@@ -39,13 +41,7 @@ const formProps: FormData[] = [
     required: true,
     width: "480px",
     type: "date",
-  },
-  {
-    key: "dateModified",
-    label: "DMP 最終更新年月日",
-    required: true,
-    width: "480px",
-    type: "date",
+    readOnly: true,
   },
 ]
 
@@ -54,18 +50,32 @@ interface DmpMetadataSectionProps {
 }
 
 export default function DmpMetadataSection({ sx }: DmpMetadataSectionProps) {
-  const { control } = useFormContext<DmpFormValues>()
+  const { control, getValues } = useFormContext<DmpFormValues>()
 
   return (
     <Box sx={{ ...sx, display: "flex", flexDirection: "column" }}>
       <SectionHeader text="DMP 作成・更新情報" />
       <Box sx={{ display: "flex", flexDirection: "column", gap: "1rem", mt: "1rem" }}>
-        {formProps.map(({ key, label, required, width, helperText, type, options }) => (
+        {formProps.map(({ key, label, required, width, helperText, type, options, readOnly }) => (
           <Controller
             key={key}
             name={`dmp.metadata.${key}`}
             control={control}
-            rules={required ? { required: `${label} は必須です` } : {}}
+            rules={
+              key === "submissionDate"
+                ? {
+                  required: `${label} は必須です`,
+                  validate: (value) => {
+                    const dateCreated = getValues("dmp.metadata.dateCreated")
+                    if (dateCreated && value && value <= dateCreated) {
+                      return "提出日は DMP 作成年月日より後の日付を入力してください"
+                    }
+                  },
+                }
+                : required
+                  ? { required: `${label} は必須です` }
+                  : {}
+            }
             render={({ field, fieldState: { error } }) => (
               <FormControl fullWidth>
                 <OurFormLabel label={label} required={required} htmlFor={`metadata.${key}`} />
@@ -79,6 +89,7 @@ export default function DmpMetadataSection({ sx }: DmpMetadataSectionProps) {
                   type={type === "date" ? "date" : "text"}
                   select={type === "select"}
                   size="small"
+                  disabled={readOnly}
                 >
                   {type === "select" &&
                     options!.map((option) => (

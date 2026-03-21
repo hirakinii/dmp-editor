@@ -8,7 +8,7 @@ import LinkOffOutlined from "@mui/icons-material/LinkOffOutlined"
 import OpenInNew from "@mui/icons-material/OpenInNew"
 import { Autocomplete, Box, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, FormControl, Chip, TableContainer, Paper, Table, TableHead, TableCell, TableRow, TableBody, colors, Select, FormHelperText, Typography, Link } from "@mui/material"
 import { SxProps } from "@mui/system"
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { useFormContext, useFieldArray, Controller, useForm, useFormState, FormProvider, useWatch } from "react-hook-form"
 
 import HelpChip from "@/components/EditProject/HelpChip"
@@ -351,10 +351,10 @@ function DataManagementAgencyField({ label, required, helpChip }: DataManagement
               if (newValue !== null && typeof newValue !== "string") {
                 // ROR option selected: set both agency name and ROR ID
                 field.onChange(newValue.name)
-                setValue("rorId", newValue.id)
+                setValue("rorId", newValue.id, { shouldDirty: true })
               } else if (newValue === null) {
                 // Cleared via X button: also clear the ROR ID
-                setValue("rorId", undefined)
+                setValue("rorId", undefined, { shouldDirty: true })
               }
             }}
             loading={isLoading}
@@ -428,6 +428,8 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
     defaultValue: [],
   }) as DmpFormValues["dmp"]["dataInfo"]
   const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
+  const originalValuesRef = useRef<DataInfo | null>(null)
 
   const dialogMethods = useForm<DataInfo>({
     defaultValues: initDataInfo(),
@@ -446,14 +448,30 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
 
   const handleOpen = (index: number) => {
     if (index === dataInfos.length) {
-      dialogMethods.reset(initDataInfo())
+      const init = initDataInfo()
+      dialogMethods.reset(init)
+      originalValuesRef.current = init
     } else {
-      dialogMethods.reset(dataInfos[index] as DataInfo)
+      const data = dataInfos[index] as DataInfo
+      dialogMethods.reset(data)
+      originalValuesRef.current = data
     }
     setOpenIndex(index)
   }
 
-  const handleClose = () => setOpenIndex(null)
+  const handleClose = () => {
+    if (dialogMethods.formState.isDirty) {
+      setCancelConfirmOpen(true)
+    } else {
+      setOpenIndex(null)
+    }
+  }
+
+  const handleDiscardAndClose = () => {
+    dialogMethods.reset()
+    setCancelConfirmOpen(false)
+    setOpenIndex(null)
+  }
 
   const handleDialogSubmit = (data: DataInfo) => {
     if (openIndex === null) return
@@ -462,7 +480,9 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
     } else {
       update(openIndex, data)
     }
-    handleClose()
+    // Use setOpenIndex directly to bypass the dirty check in handleClose,
+    // since the form was successfully submitted.
+    setOpenIndex(null)
   }
 
   const getValue = <K extends keyof DataInfo>(key: K): DataInfo[K] => {
@@ -491,7 +511,25 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
     if (newValue === "") {
       newValue = undefined as DataInfo[K]
     }
-    dialogMethods.setValue(key, newValue as never)
+    dialogMethods.setValue(key, newValue as never, { shouldDirty: true })
+  }
+
+  const formatFieldValue = (key: keyof DataInfo, value: DataInfo[keyof DataInfo]): string => {
+    if (value === undefined || value === null || value === "") return "（空）"
+    if (key === "dataCreator") return personNames[(value as number) - 1] ?? "（空）"
+    if (Array.isArray(value)) return value.length === 0 ? "（空）" : (value as unknown as string[]).join(", ")
+    return String(value)
+  }
+
+  const computeDiff = (): { label: string; before: string; after: string }[] => {
+    const original = originalValuesRef.current
+    if (!original) return []
+    const current = dialogMethods.getValues()
+    return formData.flatMap(({ key, label }) => {
+      const before = formatFieldValue(key, original[key])
+      const after = formatFieldValue(key, current[key])
+      return before !== after ? [{ label, before, after }] : []
+    })
   }
 
   const getValidationRules = <K extends keyof DataInfo>(key: K, staticRequired: boolean, label: string) => {
@@ -855,7 +893,7 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
           <DialogActions sx={{ m: "0.5rem 1.5rem 1.5rem" }}>
             <Button
               type="submit"
-              children={openIndex === dataInfos.length ? "追加" : "編集"}
+              children={openIndex === dataInfos.length ? "追加" : "更新"}
               variant="contained"
               color="secondary"
               disabled={isSubmitted && !isValid}
@@ -864,6 +902,65 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
             <Button children="キャンセル" onClick={handleClose} variant="outlined" color="secondary" />
           </DialogActions>
         </FormProvider>
+      </Dialog>
+
+      <Dialog
+        open={cancelConfirmOpen}
+        onClose={() => setCancelConfirmOpen(false)}
+        fullWidth
+        maxWidth="md"
+        closeAfterTransition={false}
+      >
+        <DialogTitle sx={{ mt: "0.5rem", mx: "1rem" }}>
+          {"編集中の内容を破棄しますか？"}
+        </DialogTitle>
+        <DialogContent sx={{ mx: "1rem" }}>
+          {(() => {
+            const diff = computeDiff()
+            if (diff.length === 0) {
+              return <Typography>{"入力中の内容は保存されません。"}</Typography>
+            }
+            return (
+              <>
+                <Typography sx={{ mb: "1rem" }}>{"以下の変更内容が破棄されます："}</Typography>
+                <TableContainer component={Paper} variant="outlined" sx={{ borderBottom: "none" }}>
+                  <Table size="small">
+                    <TableHead sx={{ backgroundColor: colors.grey[100] }}>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: "bold", width: "30%" }}>{"項目"}</TableCell>
+                        <TableCell sx={{ fontWeight: "bold", width: "35%" }}>{"変更前"}</TableCell>
+                        <TableCell sx={{ fontWeight: "bold", width: "35%" }}>{"変更後"}</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {diff.map(({ label, before, after }) => (
+                        <TableRow key={label}>
+                          <TableCell sx={{ verticalAlign: "top" }}>{label}</TableCell>
+                          <TableCell sx={{ verticalAlign: "top", color: "text.secondary", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{before}</TableCell>
+                          <TableCell sx={{ verticalAlign: "top", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{after}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </>
+            )
+          })()}
+        </DialogContent>
+        <DialogActions sx={{ m: "0.5rem 1.5rem 1.5rem" }}>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDiscardAndClose}
+            children="破棄して閉じる"
+          />
+          <Button
+            variant="outlined"
+            color="secondary"
+            onClick={() => setCancelConfirmOpen(false)}
+            children="編集を続ける"
+          />
+        </DialogActions>
       </Dialog>
     </Box>
   )
