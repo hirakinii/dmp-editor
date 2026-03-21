@@ -24,6 +24,14 @@ vi.mock("@/components/Frame", () => ({
   default: ({ children }: { children: React.ReactNode }) => <div data-testid="frame">{children}</div>,
 }))
 
+vi.mock("@/components/EditProject/ExportDmpCard", () => ({
+  default: ({ projectName }: { projectName: string }) => (
+    <div data-testid="export-dmp-card" data-project-name={projectName}>
+      ExportDmpCard
+    </div>
+  ),
+}))
+
 // --- Test data ---
 
 const mockDmp: Dmp = {
@@ -154,6 +162,13 @@ describe("DetailProject", () => {
       const editLink = screen.getByRole("link", { name: /編集する/ })
       expect(editLink).toBeInTheDocument()
       expect(editLink).toHaveAttribute("href", "/projects/proj-001")
+    })
+
+    it("renders ExportDmpCard with the project name", () => {
+      renderDetailProject()
+      const card = screen.getByTestId("export-dmp-card")
+      expect(card).toBeInTheDocument()
+      expect(card).toHaveAttribute("data-project-name", "テスト研究プロジェクト")
     })
   })
 })

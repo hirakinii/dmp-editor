@@ -35,9 +35,11 @@ export interface FormCardProps {
   user: User
   project?: ProjectInfo | null
   projects: ProjectInfo[]
+  /** Called immediately when the save mutation starts (to show a full-page loading overlay). */
+  onSaveStart: () => void
+  /** Called when the save mutation fails (to hide the loading overlay). */
+  onSaveEnd: () => void
 }
-
-type SaveState = "idle" | "saving" | "saved" | "error"
 
 const STEPS = [
   { label: "基本設定" },
@@ -91,14 +93,29 @@ function CustomStepIcon(props: StepIconProps) {
   return <StepIcon {...rest} />
 }
 
-export default function FormCard({ sx, isNew = false, user, project, projects }: FormCardProps) {
+/** Converts a save error into a user-readable Japanese message. */
+function formatSaveError(error: unknown): string {
+  const prefix = "GRDMへの保存に失敗しました"
+  if (error instanceof Error) {
+    if (error.name === "AbortError" || error.message.toLowerCase().includes("timeout")) {
+      return `${prefix}：タイムアウト`
+    }
+    if (error.message.includes("429")) {
+      return `${prefix}：リクエスト数が上限を超えました (429)`
+    }
+    return `${prefix}：${error.message}`
+  }
+  return prefix
+}
+
+export default function FormCard({ sx, isNew = false, user, project, projects, onSaveStart, onSaveEnd }: FormCardProps) {
   const { projectId = "" } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
   const { getValues, setValue, handleSubmit, formState, reset, trigger, setError } = useFormContext<DmpFormValues>()
   const { isValid, isSubmitted } = formState
   const updateMutation = useUpdateDmp()
   const { showSnackbar } = useSnackbar()
-  const [saveState, setSaveState] = useState<SaveState>("idle")
+  const [isSaving, setIsSaving] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
   const [stepErrors, setStepErrors] = useState<Set<number>>(new Set())
 
@@ -134,32 +151,27 @@ export default function FormCard({ sx, isNew = false, user, project, projects }:
 
     setValue("dmp.metadata.dateModified", todayString())
     const formValues = getValues()
-    setSaveState("saving")
+    setIsSaving(true)
+    onSaveStart()
 
     updateMutation.mutate(
       { projectId, isNew, formValues },
       {
         onSuccess: (newProjectId: string) => {
-          setSaveState("saved")
-          setTimeout(() => setSaveState("idle"), 2000)
           showSnackbar("DMPを保存しました", "success")
           // reset() updates the RHF live store (isDirty = false) synchronously.
           // The useBlocker in EditProject reads from the live store via a stable
           // ref function, so navigate() called right after is not blocked.
           reset(formValues)
           const targetProjectId = isNew ? newProjectId : projectId
-          if (activeStep === STEPS.length - 1) {
-            // Last step: navigate to detail page for both new and existing projects
-            navigate(`/projects/${targetProjectId}/detail`)
-          } else if (isNew) {
-            // Other steps with a new project: navigate to the edit page
-            navigate(`/projects/${newProjectId}`)
-          }
+          // Last step: navigate to detail page for both new and existing projects.
+          // isSaving remains true; the component unmounts via navigation so no cleanup needed.
+          navigate(`/projects/${targetProjectId}/detail`)
         },
-        onError: () => {
-          setSaveState("error")
-          setTimeout(() => setSaveState("idle"), 2000)
-          showSnackbar("保存に失敗しました", "error")
+        onError: (error) => {
+          setIsSaving(false)
+          onSaveEnd()
+          showSnackbar(formatSaveError(error), "error")
         },
       },
     )
@@ -188,15 +200,8 @@ export default function FormCard({ sx, isNew = false, user, project, projects }:
     setActiveStep(targetStep)
   }
 
-  const buttonLabel = () => {
-    if (saveState === "saving") return "保存中"
-    if (saveState === "saved") return "保存しました"
-    if (saveState === "error") return "保存に失敗"
-    return "GRDM に保存する"
-  }
-
   const isButtonDisabled = () => {
-    if (saveState === "saving" || saveState === "saved" || saveState === "error") return true
+    if (isSaving) return true
     return isSubmitted && !isValid
   }
 
@@ -261,7 +266,7 @@ export default function FormCard({ sx, isNew = false, user, project, projects }:
             </Button>
           )}
           <Box sx={{ flexGrow: 1 }} />
-          {(!isNew || activeStep === STEPS.length - 1) && (
+          {activeStep === STEPS.length - 1 && (
             <Button
               variant="contained"
               color="secondary"
@@ -270,7 +275,7 @@ export default function FormCard({ sx, isNew = false, user, project, projects }:
               startIcon={<SaveOutlined />}
               disabled={isButtonDisabled()}
             >
-              {buttonLabel()}
+              {"GRDM に保存する"}
             </Button>
           )}
         </Box>

@@ -5,39 +5,23 @@ import { ReactElement } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import ExportDmpCard from "../../../src/components/EditProject/ExportDmpCard"
-import type { DmpFormValues } from "../../../src/dmp"
 import { initDmp } from "../../../src/dmp"
+import type { Dmp } from "../../../src/dmp"
 import { theme } from "../../../src/theme"
 
 // --- Hoisted mocks ---
 
-const { mockShowBoundary, mockExportToJspsExcel, mockExportToExcel, mockTrigger, mockGetValues } = vi.hoisted(
-  () => ({
-    mockShowBoundary: vi.fn(),
-    mockExportToJspsExcel: vi.fn(),
-    mockExportToExcel: vi.fn(),
-    mockTrigger: vi.fn().mockResolvedValue(true),
-    mockGetValues: vi.fn(),
-  }),
-)
+const { mockShowBoundary, mockExportToJspsExcel, mockExportToExcel } = vi.hoisted(() => ({
+  mockShowBoundary: vi.fn(),
+  mockExportToJspsExcel: vi.fn(),
+  mockExportToExcel: vi.fn(),
+}))
 
 vi.mock("react-error-boundary", async (importOriginal) => {
   const original = await importOriginal<typeof import("react-error-boundary")>()
   return {
     ...original,
     useErrorBoundary: () => ({ showBoundary: mockShowBoundary }),
-  }
-})
-
-vi.mock("react-hook-form", async (importOriginal) => {
-  const original = await importOriginal<typeof import("react-hook-form")>()
-  return {
-    ...original,
-    useFormContext: () => ({
-      getValues: mockGetValues,
-      trigger: mockTrigger,
-      formState: { isValid: true, isSubmitted: false },
-    }),
   }
 })
 
@@ -55,8 +39,8 @@ function renderWithTheme(ui: ReactElement) {
   return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>)
 }
 
-function makeFormValues(overrides: Partial<DmpFormValues> = {}): DmpFormValues {
-  return { grdmProjectName: "My GRDM Project", dmp: initDmp(), ...overrides }
+function makeDmp(): Dmp {
+  return initDmp()
 }
 
 // --- Tests ---
@@ -78,12 +62,22 @@ describe("ExportDmpCard", () => {
     mockExportToExcel.mockResolvedValue(new Blob(["test"]))
   })
 
-  describe("filename for download (Bug 1)", () => {
-    it("uses dmp-jsps-<grdmProjectName>.xlsx for JSPS format", async () => {
-      const user = userEvent.setup()
-      mockGetValues.mockReturnValue(makeFormValues({ grdmProjectName: "My GRDM Project" }))
+  describe("rendering", () => {
+    it("renders the DMP output card title", () => {
+      renderWithTheme(<ExportDmpCard dmp={makeDmp()} projectName="Test Project" />)
+      expect(screen.getByText("DMP の出力")).toBeInTheDocument()
+    })
 
-      renderWithTheme(<ExportDmpCard />)
+    it("renders the download button", () => {
+      renderWithTheme(<ExportDmpCard dmp={makeDmp()} projectName="Test Project" />)
+      expect(screen.getByRole("button", { name: /DMP を出力する/ })).toBeInTheDocument()
+    })
+  })
+
+  describe("filename for download", () => {
+    it("uses dmp-jsps-<projectName>.xlsx for JSPS format", async () => {
+      const user = userEvent.setup()
+      renderWithTheme(<ExportDmpCard dmp={makeDmp()} projectName="My GRDM Project" />)
 
       await user.click(screen.getByRole("button", { name: /DMP を出力する/ }))
       await user.click(screen.getByText("JSPS 形式"))
@@ -93,11 +87,9 @@ describe("ExportDmpCard", () => {
       })
     })
 
-    it("uses dmp-sample-<grdmProjectName>.xlsx for sample format", async () => {
+    it("uses dmp-sample-<projectName>.xlsx for sample format", async () => {
       const user = userEvent.setup()
-      mockGetValues.mockReturnValue(makeFormValues({ grdmProjectName: "My GRDM Project" }))
-
-      renderWithTheme(<ExportDmpCard />)
+      renderWithTheme(<ExportDmpCard dmp={makeDmp()} projectName="My GRDM Project" />)
 
       await user.click(screen.getByRole("button", { name: /DMP を出力する/ }))
       await user.click(screen.getByText("サンプル形式"))
@@ -107,33 +99,58 @@ describe("ExportDmpCard", () => {
       })
     })
 
-    it("falls back to dmp.projectInfo.projectName when grdmProjectName is empty", async () => {
+    it("falls back to 'untitled' when projectName is empty", async () => {
       const user = userEvent.setup()
-      const dmp = initDmp()
-      dmp.projectInfo.projectName = "Fallback Project"
-      mockGetValues.mockReturnValue(makeFormValues({ grdmProjectName: "", dmp }))
-
-      renderWithTheme(<ExportDmpCard />)
-
-      await user.click(screen.getByRole("button", { name: /DMP を出力する/ }))
-      await user.click(screen.getByText("JSPS 形式"))
-
-      await waitFor(() => {
-        expect(capturedDownloadAttr).toBe("dmp-jsps-Fallback Project.xlsx")
-      })
-    })
-
-    it("falls back to 'untitled' when both project names are empty", async () => {
-      const user = userEvent.setup()
-      mockGetValues.mockReturnValue(makeFormValues({ grdmProjectName: "" }))
-
-      renderWithTheme(<ExportDmpCard />)
+      renderWithTheme(<ExportDmpCard dmp={makeDmp()} projectName="" />)
 
       await user.click(screen.getByRole("button", { name: /DMP を出力する/ }))
       await user.click(screen.getByText("JSPS 形式"))
 
       await waitFor(() => {
         expect(capturedDownloadAttr).toBe("dmp-jsps-untitled.xlsx")
+      })
+    })
+  })
+
+  describe("download behavior", () => {
+    it("calls exportToJspsExcel with the provided dmp", async () => {
+      const user = userEvent.setup()
+      const dmp = makeDmp()
+      renderWithTheme(<ExportDmpCard dmp={dmp} projectName="Project" />)
+
+      await user.click(screen.getByRole("button", { name: /DMP を出力する/ }))
+      await user.click(screen.getByText("JSPS 形式"))
+
+      await waitFor(() => {
+        expect(mockExportToJspsExcel).toHaveBeenCalledWith(dmp)
+      })
+    })
+
+    it("calls exportToExcel with the provided dmp", async () => {
+      const user = userEvent.setup()
+      const dmp = makeDmp()
+      renderWithTheme(<ExportDmpCard dmp={dmp} projectName="Project" />)
+
+      await user.click(screen.getByRole("button", { name: /DMP を出力する/ }))
+      await user.click(screen.getByText("サンプル形式"))
+
+      await waitFor(() => {
+        expect(mockExportToExcel).toHaveBeenCalledWith(dmp)
+      })
+    })
+
+    it("calls showBoundary when exportToJspsExcel throws", async () => {
+      const user = userEvent.setup()
+      const error = new Error("Export failed")
+      mockExportToJspsExcel.mockRejectedValue(error)
+
+      renderWithTheme(<ExportDmpCard dmp={makeDmp()} projectName="Project" />)
+
+      await user.click(screen.getByRole("button", { name: /DMP を出力する/ }))
+      await user.click(screen.getByText("JSPS 形式"))
+
+      await waitFor(() => {
+        expect(mockShowBoundary).toHaveBeenCalledWith(error)
       })
     })
   })

@@ -13,6 +13,7 @@ import {
 } from "@mui/material"
 import { Link, useParams } from "react-router-dom"
 
+import ExportDmpCard from "@/components/EditProject/ExportDmpCard"
 import Frame from "@/components/Frame"
 import Loading from "@/components/Loading"
 import OurCard from "@/components/OurCard"
@@ -184,6 +185,11 @@ export default function DetailProject() {
         <SectionTitle>{"研究データ情報"}</SectionTitle>
         <DataInfoTable dataList={dmp.dataInfo} />
       </OurCard>
+      <ExportDmpCard
+        sx={{ mt: "1.5rem" }}
+        dmp={dmp}
+        projectName={dmp.projectInfo.projectName}
+      />
     </Frame>
   )
 }

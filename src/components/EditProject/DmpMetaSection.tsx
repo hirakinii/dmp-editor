@@ -39,7 +39,7 @@ export default function DmpMetaSection({ sx, isNew, project, projects }: DmpMeta
         </ToggleButtonGroup>
       </Box>
       <GrdmProject sx={{ mt: "1rem" }} isNew={isNew} project={project} projects={projects} />
-      <DmpMetadataSection sx={{ mt: "1.5rem" }} />
+      <DmpMetadataSection sx={{ mt: "1.5rem" }} isNew={isNew} />
     </Box>
   )
 }

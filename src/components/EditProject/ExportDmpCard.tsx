@@ -4,21 +4,20 @@ import { Typography, Button, CircularProgress, Menu, MenuItem } from "@mui/mater
 import { SxProps } from "@mui/system"
 import { useState } from "react"
 import { useErrorBoundary } from "react-error-boundary"
-import { useFormContext } from "react-hook-form"
 
 import OurCard from "@/components/OurCard"
-import type { DmpFormValues } from "@/dmp"
+import type { Dmp } from "@/dmp"
 import { exportToExcel } from "@/excelExport"
 import { exportToJspsExcel } from "@/jspsExport"
 
 export interface ExportDmpCardProps {
   sx?: SxProps
+  dmp: Dmp
+  projectName: string
 }
 
-export default function ExportDmpCard({ sx }: ExportDmpCardProps) {
+export default function ExportDmpCard({ sx, dmp, projectName }: ExportDmpCardProps) {
   const { showBoundary } = useErrorBoundary()
-  const { getValues, trigger, formState } = useFormContext<DmpFormValues>()
-  const { isValid, isSubmitted } = formState
   const [isDownloading, setIsDownloading] = useState(false)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
 
@@ -31,16 +30,12 @@ export default function ExportDmpCard({ sx }: ExportDmpCardProps) {
   }
 
   const handleDownload = async (format: "sample" | "jsps") => {
-    const valid = await trigger()
     handleCloseMenu()
-    if (!valid) return
     setIsDownloading(true)
     try {
-      const values = getValues()
-      const projectName = values.grdmProjectName || values.dmp.projectInfo.projectName || "untitled"
-      const dmp = values.dmp
+      const name = projectName || "untitled"
       const blob = format === "jsps" ? await exportToJspsExcel(dmp) : await exportToExcel(dmp)
-      const filename = `dmp-${format}-${projectName}.xlsx`
+      const filename = `dmp-${format}-${name}.xlsx`
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
@@ -68,7 +63,7 @@ export default function ExportDmpCard({ sx }: ExportDmpCardProps) {
           width: "180px",
           mt: "1.5rem",
         }}
-        disabled={isDownloading || (isSubmitted && !isValid)}
+        disabled={isDownloading}
         startIcon={
           isDownloading ? <CircularProgress size={20} /> : <DownloadingOutlined />
         }
