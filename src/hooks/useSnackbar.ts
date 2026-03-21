@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react"
 
-export type SnackbarSeverity = "success" | "error" | "info"
+export type SnackbarSeverity = "success" | "error" | "info" | "warning"
 
 export interface SnackbarContextValue {
   showSnackbar: (message: string, severity: SnackbarSeverity) => void

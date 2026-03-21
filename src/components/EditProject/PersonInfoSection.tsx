@@ -12,6 +12,7 @@ import HelpChip from "@/components/EditProject/HelpChip"
 import OurFormLabel from "@/components/EditProject/OurFormLabel"
 import SectionHeader from "@/components/EditProject/SectionHeader"
 import { initPersonInfo, personRole, PersonInfo, DmpFormValues } from "@/dmp"
+import { useSnackbar } from "@/hooks/useSnackbar"
 import theme from "@/theme"
 
 interface FormData {
@@ -96,6 +97,7 @@ export default function PersonInfoSection({ sx }: PersonInfoSectionProps) {
   const { isValid, isSubmitted } = useFormState({
     control: dialogMethods.control,
   })
+  const { showSnackbar } = useSnackbar()
 
   const handleOpen = (index: number) => {
     if (index === personInfos.length) {
@@ -110,6 +112,36 @@ export default function PersonInfoSection({ sx }: PersonInfoSectionProps) {
 
   const handleDialogSubmit = (data: PersonInfo) => {
     if (openIndex === null) return
+
+    // Duplicate person check (lastName + firstName + affiliation)
+    const isDuplicate = personInfos.some((p, i) => {
+      if (i === openIndex) return false
+      return (
+        p.lastName === data.lastName &&
+        p.firstName === data.firstName &&
+        p.affiliation === data.affiliation
+      )
+    })
+    if (isDuplicate) {
+      showSnackbar("同じ担当者がすでに登録されています", "warning")
+      return
+    }
+
+    // Unique role constraints
+    const uniqueRoles = ["研究代表者", "管理対象データの管理責任者"] as const
+    for (const role of uniqueRoles) {
+      if (data.role.includes(role)) {
+        const alreadyExists = personInfos.some((p, i) => {
+          if (i === openIndex) return false
+          return p.role.includes(role)
+        })
+        if (alreadyExists) {
+          showSnackbar(`「${role}」はすでに登録されています。一名のみ登録できます。`, "error")
+          return
+        }
+      }
+    }
+
     if (openIndex === personInfos.length) {
       append(data)
     } else {

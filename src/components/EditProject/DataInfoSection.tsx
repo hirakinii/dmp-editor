@@ -428,6 +428,7 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
     defaultValue: [],
   }) as DmpFormValues["dmp"]["dataInfo"]
   const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
 
   const dialogMethods = useForm<DataInfo>({
     defaultValues: initDataInfo(),
@@ -453,7 +454,19 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
     setOpenIndex(index)
   }
 
-  const handleClose = () => setOpenIndex(null)
+  const handleClose = () => {
+    if (dialogMethods.formState.isDirty) {
+      setCancelConfirmOpen(true)
+    } else {
+      setOpenIndex(null)
+    }
+  }
+
+  const handleDiscardAndClose = () => {
+    dialogMethods.reset()
+    setCancelConfirmOpen(false)
+    setOpenIndex(null)
+  }
 
   const handleDialogSubmit = (data: DataInfo) => {
     if (openIndex === null) return
@@ -855,7 +868,7 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
           <DialogActions sx={{ m: "0.5rem 1.5rem 1.5rem" }}>
             <Button
               type="submit"
-              children={openIndex === dataInfos.length ? "追加" : "編集"}
+              children={openIndex === dataInfos.length ? "追加" : "更新"}
               variant="contained"
               color="secondary"
               disabled={isSubmitted && !isValid}
@@ -864,6 +877,35 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
             <Button children="キャンセル" onClick={handleClose} variant="outlined" color="secondary" />
           </DialogActions>
         </FormProvider>
+      </Dialog>
+
+      <Dialog
+        open={cancelConfirmOpen}
+        onClose={() => setCancelConfirmOpen(false)}
+        fullWidth
+        maxWidth="xs"
+        closeAfterTransition={false}
+      >
+        <DialogTitle sx={{ mt: "0.5rem", mx: "1rem" }}>
+          {"編集中の内容を破棄しますか？"}
+        </DialogTitle>
+        <DialogContent sx={{ mx: "1rem" }}>
+          {"入力中の内容は保存されません。"}
+        </DialogContent>
+        <DialogActions sx={{ m: "0.5rem 1.5rem 1.5rem" }}>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDiscardAndClose}
+            children="破棄して閉じる"
+          />
+          <Button
+            variant="outlined"
+            color="secondary"
+            onClick={() => setCancelConfirmOpen(false)}
+            children="編集を続ける"
+          />
+        </DialogActions>
       </Dialog>
     </Box>
   )
