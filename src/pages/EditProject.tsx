@@ -1,16 +1,18 @@
 import {
+  Backdrop,
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Typography,
 } from "@mui/material"
 import { useEffect, useRef, useState } from "react"
 import { useForm, FormProvider } from "react-hook-form"
 import { useParams } from "react-router-dom"
 
-import ExportDmpCard from "@/components/EditProject/ExportDmpCard"
 import FormCard from "@/components/EditProject/FormCard"
 import Frame from "@/components/Frame"
 import Loading from "@/components/Loading"
@@ -34,6 +36,7 @@ export default function EditProject({ isNew = false }: EditProjectProps) {
 
   const [formInitialized, setFormInitialized] = useState(false)
   const [minDelayComplete, setMinDelayComplete] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     if (!isNew) return
@@ -101,6 +104,14 @@ export default function EditProject({ isNew = false }: EditProjectProps) {
 
   return (
     <Frame>
+      {/* Overlay while GRDM save is in progress. FormCard stays mounted so the
+          mutation callbacks (onSuccess → navigate, onError → onSaveEnd) can fire. */}
+      <Backdrop open={isSaving} sx={{ zIndex: (t) => t.zIndex.drawer + 1, flexDirection: "column", gap: 2 }}>
+        <CircularProgress color="inherit" size={60} />
+        <Typography sx={{ color: "white", fontSize: "1.2rem", fontWeight: "bold" }}>
+          {"GRDMに保存中..."}
+        </Typography>
+      </Backdrop>
       <FormProvider {...methods}>
         <FormCard
           sx={{ mt: "1.5rem" }}
@@ -108,8 +119,9 @@ export default function EditProject({ isNew = false }: EditProjectProps) {
           user={userQuery.data!}
           project={projectQuery.data}
           projects={projectsQuery.data!}
+          onSaveStart={() => setIsSaving(true)}
+          onSaveEnd={() => setIsSaving(false)}
         />
-        <ExportDmpCard sx={{ mt: "1.5rem" }} />
       </FormProvider>
 
       <Dialog open={blocker.state === "blocked"} onClose={() => blocker.reset?.()}>

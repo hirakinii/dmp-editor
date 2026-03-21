@@ -78,9 +78,13 @@ const mockProjects: ProjectInfo[] = []
 function FormCardWrapper({
   isNew = false,
   defaultValues,
+  onSaveStart = vi.fn(),
+  onSaveEnd = vi.fn(),
 }: {
   isNew?: boolean
   defaultValues?: Partial<DmpFormValues>
+  onSaveStart?: () => void
+  onSaveEnd?: () => void
 }) {
   const dmp = initDmp(null)
   const methods = useForm<DmpFormValues>({
@@ -94,7 +98,7 @@ function FormCardWrapper({
   })
   return (
     <FormProvider {...methods}>
-      <FormCard isNew={isNew} user={mockUser} projects={mockProjects} />
+      <FormCard isNew={isNew} user={mockUser} projects={mockProjects} onSaveStart={onSaveStart} onSaveEnd={onSaveEnd} />
     </FormProvider>
   )
 }
@@ -119,7 +123,7 @@ function FormCardWrapperWithValidation({ isNew = false }: { isNew?: boolean }) {
         data-testid="hidden-grdm-input"
         style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
       />
-      <FormCard isNew={isNew} user={mockUser} projects={mockProjects} />
+      <FormCard isNew={isNew} user={mockUser} projects={mockProjects} onSaveStart={vi.fn()} onSaveEnd={vi.fn()} />
     </FormProvider>
   )
 }
@@ -192,9 +196,9 @@ describe("FormCard with Stepper", () => {
       expect(screen.getByRole("button", { name: "次へ" })).toBeInTheDocument()
     })
 
-    it("renders save button at step 1 (existing project)", () => {
+    it("does not render save button at step 1 (existing project)", () => {
       renderWithProviders(<FormCardWrapper isNew={false} />)
-      expect(screen.getByRole("button", { name: /GRDM に保存する/ })).toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: /GRDM に保存する/ })).not.toBeInTheDocument()
     })
   })
 
@@ -402,42 +406,47 @@ describe("FormCard with Stepper", () => {
   })
 
   describe("save button visibility across all steps", () => {
-    describe("existing project (isNew=false): save button shown on every step", () => {
-      const stepLabels = ["基本設定", "プロジェクト情報", "担当者情報", "研究データ情報", "GRDM 連携"]
+    describe("save button shown only on last step (both isNew=true and isNew=false)", () => {
+      const nonLastStepLabels = ["プロジェクト情報", "担当者情報", "研究データ情報"]
 
-      for (const label of stepLabels) {
-        it(`shows save button on step: ${label}`, async () => {
+      for (const label of nonLastStepLabels) {
+        it(`hides save button on step: ${label} (isNew=false)`, async () => {
           const user = userEvent.setup()
           renderWithProviders(<FormCardWrapper isNew={false} />)
 
           await user.click(screen.getByText(label))
 
           await waitFor(() => {
-            expect(screen.getByRole("button", { name: /GRDM に保存する/ })).toBeInTheDocument()
+            expect(screen.queryByRole("button", { name: /GRDM に保存する/ })).not.toBeInTheDocument()
           })
         })
       }
-    })
 
-    describe("new project (isNew=true): save button shown only on last step", () => {
-      const nonLastSteps = ["基本設定", "プロジェクト情報", "担当者情報", "研究データ情報"]
+      it("hides save button on step 基本設定 (isNew=false)", () => {
+        renderWithProviders(<FormCardWrapper isNew={false} />)
+        expect(screen.queryByRole("button", { name: /GRDM に保存する/ })).not.toBeInTheDocument()
+      })
 
-      for (const label of nonLastSteps) {
-        it(`hides save button on step: ${label}`, async () => {
-          // In isNew=true mode, step bar does not navigate forward, so clicking
-          // these labels keeps the user on step 0. Save button is hidden on step 0.
-          renderWithProviders(<FormCardWrapper isNew />)
-          // Step bar click is a no-op for forward steps in isNew mode.
-          // Save button should remain hidden.
-          expect(screen.queryByRole("button", { name: /GRDM に保存する/ })).not.toBeInTheDocument()
+      it("shows save button only on last step: GRDM 連携 (isNew=false, jump via step bar)", async () => {
+        const user = userEvent.setup()
+        renderWithProviders(<FormCardWrapper isNew={false} />)
+
+        await user.click(screen.getByText("GRDM 連携"))
+
+        await waitFor(() => {
+          expect(screen.getByRole("button", { name: /GRDM に保存する/ })).toBeInTheDocument()
         })
-      }
+      })
 
-      it("shows save button on last step: GRDM 連携 (navigate via 次へ)", async () => {
+      it("hides save button on step 基本設定 (isNew=true)", () => {
+        renderWithProviders(<FormCardWrapper isNew />)
+        expect(screen.queryByRole("button", { name: /GRDM に保存する/ })).not.toBeInTheDocument()
+      })
+
+      it("shows save button on last step: GRDM 連携 (isNew=true, navigate via 次へ)", async () => {
         const user = userEvent.setup()
         renderWithProviders(<FormCardWrapper isNew />)
 
-        // Navigate to last step using 次へ (4 clicks: step 0→1→2→3→4)
         await advanceToLastStep(user)
 
         await waitFor(() => {
@@ -523,21 +532,78 @@ describe("FormCard with Stepper", () => {
       })
     })
 
-    it("does NOT navigate after save on non-last step (existing project)", async () => {
+  })
+
+  describe("save callbacks (onSaveStart / onSaveEnd)", () => {
+    it("calls onSaveStart when save button is clicked on last step", async () => {
       const user = userEvent.setup()
-      mockMutate.mockImplementation((_args: unknown, { onSuccess }: { onSuccess: (id: string) => void }) => {
-        onSuccess("test-project-id")
-      })
+      const onSaveStart = vi.fn()
+      const onSaveEnd = vi.fn()
+      // mutate never calls back (simulates pending request)
+      mockMutate.mockImplementation(vi.fn())
 
-      renderWithProviders(<FormCardWrapper isNew={false} />)
+      renderWithProviders(
+        <FormCardWrapper isNew={false} onSaveStart={onSaveStart} onSaveEnd={onSaveEnd} />,
+      )
 
-      // Stay on step 1 (not last step) and click save
+      await user.click(screen.getByText("GRDM 連携"))
+      await waitFor(() => expect(screen.getByTestId("project-table-section")).toBeInTheDocument())
+
       await user.click(screen.getByRole("button", { name: /GRDM に保存する/ }))
 
-      // Should NOT navigate for existing project on non-last step
       await waitFor(() => {
-        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(onSaveStart).toHaveBeenCalledTimes(1)
       })
+    })
+
+    it("calls onSaveEnd when save fails", async () => {
+      const user = userEvent.setup()
+      const onSaveStart = vi.fn()
+      const onSaveEnd = vi.fn()
+      mockMutate.mockImplementation(
+        (_args: unknown, { onError }: { onError: (err: Error) => void }) => {
+          onError(new Error("Network error"))
+        },
+      )
+
+      renderWithProviders(
+        <FormCardWrapper isNew={false} onSaveStart={onSaveStart} onSaveEnd={onSaveEnd} />,
+      )
+
+      await user.click(screen.getByText("GRDM 連携"))
+      await waitFor(() => expect(screen.getByTestId("project-table-section")).toBeInTheDocument())
+
+      await user.click(screen.getByRole("button", { name: /GRDM に保存する/ }))
+
+      await waitFor(() => {
+        expect(onSaveEnd).toHaveBeenCalledTimes(1)
+      })
+    })
+
+    it("does NOT call onSaveEnd on successful save (navigate instead)", async () => {
+      const user = userEvent.setup()
+      const onSaveStart = vi.fn()
+      const onSaveEnd = vi.fn()
+      mockMutate.mockImplementation(
+        (_args: unknown, { onSuccess }: { onSuccess: (id: string) => void }) => {
+          onSuccess("test-project-id")
+        },
+      )
+
+      renderWithProviders(
+        <FormCardWrapper isNew={false} onSaveStart={onSaveStart} onSaveEnd={onSaveEnd} />,
+      )
+
+      await user.click(screen.getByText("GRDM 連携"))
+      await waitFor(() => expect(screen.getByTestId("project-table-section")).toBeInTheDocument())
+
+      await user.click(screen.getByRole("button", { name: /GRDM に保存する/ }))
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith("/projects/test-project-id/detail")
+      })
+      expect(onSaveEnd).not.toHaveBeenCalled()
     })
   })
 })
+
