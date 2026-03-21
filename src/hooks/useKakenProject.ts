@@ -10,18 +10,33 @@ import type { ProjectInfo } from "@/dmp"
  * @returns Partial DMP ProjectInfo mapped from the KAKEN project
  */
 export function kakenProjectToDmpProjectInfo(project: Project): ProjectInfo {
-  const allocation = project.allocations?.[0]
   const period = project.periodOfAward
 
+  // Map recordSet to funding agency, program name, and program code
+  const isKakenhi = project.recordSet === "kakenhi"
+  const fundingAgency = isKakenhi ? "日本学術振興会" : ""
+  const programName = isKakenhi ? "科学研究費助成事業" : ""
+  const programCode = isKakenhi ? "JP" : ""
+
+  // Derive projectCode from nationalAwardNumber identifier, or fall back to programCode + awardNumber
+  const nationalAwardNumber = project.identifiers?.find(
+    (id) => id.type === "nationalAwardNumber",
+  )?.value
+  const projectCode = nationalAwardNumber ?? programCode + (project.awardNumber ?? "")
+
+  // Derive adoptionYear from the created date
+  const adoptionYear = project.created != null ? String(project.created.getFullYear()) : ""
+
   return {
-    fundingAgency: allocation?.name ?? "",
-    programName: allocation?.name ?? "",
-    programCode: allocation?.code ?? "",
-    projectCode: project.awardNumber ?? "",
+    fundingAgency,
+    programName,
+    programCode,
+    projectCode,
     projectName: project.title ?? "",
-    adoptionYear: period?.startFiscalYear != null ? String(period.startFiscalYear) : "",
-    startYear: period?.startFiscalYear != null ? String(period.startFiscalYear) : "",
-    endYear: period?.endFiscalYear != null ? String(period.endFiscalYear) : "",
+    adoptionYear,
+    startYear:
+      period?.searchStartFiscalYear != null ? String(period.searchStartFiscalYear) : "",
+    endYear: period?.searchEndFiscalYear != null ? String(period.searchEndFiscalYear) : "",
   }
 }
 

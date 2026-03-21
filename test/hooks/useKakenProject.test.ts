@@ -28,7 +28,9 @@ function createWrapper() {
 
 const mockProject: Project = {
   awardNumber: "23K12345",
+  recordSet: "kakenhi",
   title: "テスト研究プロジェクト",
+  created: new Date("2023-04-01"),
   allocations: [
     {
       name: "科学研究費助成事業",
@@ -38,25 +40,28 @@ const mockProject: Project = {
   periodOfAward: {
     startFiscalYear: 2023,
     endFiscalYear: 2026,
+    searchStartFiscalYear: 2023,
+    searchEndFiscalYear: 2026,
   },
+  identifiers: [{ type: "nationalAwardNumber", value: "JP23K12345" }],
 }
 
 describe("kakenProjectToDmpProjectInfo", () => {
   it("maps all fields correctly from a full KAKEN project", () => {
     const result = kakenProjectToDmpProjectInfo(mockProject)
 
-    expect(result.fundingAgency).toBe("科学研究費助成事業")
+    expect(result.fundingAgency).toBe("日本学術振興会")
     expect(result.programName).toBe("科学研究費助成事業")
     expect(result.programCode).toBe("JP")
-    expect(result.projectCode).toBe("23K12345")
+    expect(result.projectCode).toBe("JP23K12345")
     expect(result.projectName).toBe("テスト研究プロジェクト")
     expect(result.adoptionYear).toBe("2023")
     expect(result.startYear).toBe("2023")
     expect(result.endYear).toBe("2026")
   })
 
-  it("handles missing allocations gracefully", () => {
-    const project: Project = { ...mockProject, allocations: [] }
+  it("returns empty strings for agency/program/code when recordSet is not kakenhi", () => {
+    const project: Project = { ...mockProject, recordSet: "nrid" }
     const result = kakenProjectToDmpProjectInfo(project)
 
     expect(result.fundingAgency).toBe("")
@@ -64,29 +69,82 @@ describe("kakenProjectToDmpProjectInfo", () => {
     expect(result.programCode).toBe("")
   })
 
-  it("handles undefined allocations", () => {
-    const project: Project = { ...mockProject, allocations: undefined }
+  it("returns empty strings for agency/program/code when recordSet is undefined", () => {
+    const project: Project = { ...mockProject, recordSet: undefined }
     const result = kakenProjectToDmpProjectInfo(project)
 
     expect(result.fundingAgency).toBe("")
     expect(result.programName).toBe("")
     expect(result.programCode).toBe("")
+  })
+
+  it("falls back to programCode + awardNumber when nationalAwardNumber identifier is absent", () => {
+    const project: Project = { ...mockProject, identifiers: [] }
+    const result = kakenProjectToDmpProjectInfo(project)
+
+    expect(result.projectCode).toBe("JP23K12345")
+  })
+
+  it("falls back to programCode + awardNumber when identifiers contains no nationalAwardNumber", () => {
+    const project: Project = {
+      ...mockProject,
+      identifiers: [{ type: "doi", value: "10.xxxx/test" }],
+    }
+    const result = kakenProjectToDmpProjectInfo(project)
+
+    expect(result.projectCode).toBe("JP23K12345")
+  })
+
+  it("falls back to programCode + awardNumber when identifiers is undefined", () => {
+    const project: Project = { ...mockProject, identifiers: undefined }
+    const result = kakenProjectToDmpProjectInfo(project)
+
+    expect(result.projectCode).toBe("JP23K12345")
+  })
+
+  it("uses empty string for projectCode when identifiers absent and awardNumber is undefined", () => {
+    const project: Project = { ...mockProject, identifiers: undefined, awardNumber: undefined }
+    const result = kakenProjectToDmpProjectInfo(project)
+
+    expect(result.projectCode).toBe("JP")
   })
 
   it("handles missing periodOfAward", () => {
     const project: Project = { ...mockProject, periodOfAward: undefined }
     const result = kakenProjectToDmpProjectInfo(project)
 
-    expect(result.adoptionYear).toBe("")
     expect(result.startYear).toBe("")
     expect(result.endYear).toBe("")
   })
 
-  it("handles missing awardNumber", () => {
-    const project: Project = { ...mockProject, awardNumber: undefined }
+  it("derives adoptionYear from created date", () => {
+    const project: Project = { ...mockProject, created: new Date("2021-10-15") }
     const result = kakenProjectToDmpProjectInfo(project)
 
-    expect(result.projectCode).toBe("")
+    expect(result.adoptionYear).toBe("2021")
+  })
+
+  it("returns empty adoptionYear when created is undefined", () => {
+    const project: Project = { ...mockProject, created: undefined }
+    const result = kakenProjectToDmpProjectInfo(project)
+
+    expect(result.adoptionYear).toBe("")
+  })
+
+  it("uses searchStartFiscalYear and searchEndFiscalYear for startYear and endYear", () => {
+    const project: Project = {
+      ...mockProject,
+      periodOfAward: {
+        startFiscalYear: 2020,
+        endFiscalYear: 2025,
+        searchStartFiscalYear: 2023,
+        searchEndFiscalYear: 2026,
+      },
+    }
+    const result = kakenProjectToDmpProjectInfo(project)
+
+    expect(result.startYear).toBe("2023")
+    expect(result.endYear).toBe("2026")
   })
 
   it("handles missing title", () => {
@@ -124,9 +182,9 @@ describe("useKakenProject", () => {
 
     expect(queryResult.isSuccess).toBe(true)
     expect(mockSearch).toHaveBeenCalledWith({ projectNumber: "23K12345" })
-    expect(queryResult.data?.projectCode).toBe("23K12345")
+    expect(queryResult.data?.projectCode).toBe("JP23K12345")
     expect(queryResult.data?.projectName).toBe("テスト研究プロジェクト")
-    expect(queryResult.data?.fundingAgency).toBe("科学研究費助成事業")
+    expect(queryResult.data?.fundingAgency).toBe("日本学術振興会")
   })
 
   it("passes appId from KAKEN_APP_ID to KakenApiClient constructor", async () => {
