@@ -13,6 +13,7 @@ import {
   getProject,
   getProjectInfo,
   listingProjects,
+  updateProjectTitle,
 } from "../src/grdmClient"
 
 // --- Mock GrdmClient ---
@@ -20,6 +21,7 @@ import {
 const mockGetById = vi.fn()
 const mockListNodesPaginated = vi.fn()
 const mockCreate = vi.fn()
+const mockUpdate = vi.fn()
 
 vi.mock("@hirakinii-packages/grdm-api-typescript", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@hirakinii-packages/grdm-api-typescript")>()
@@ -30,6 +32,7 @@ vi.mock("@hirakinii-packages/grdm-api-typescript", async (importOriginal) => {
         getById: mockGetById,
         listNodesPaginated: mockListNodesPaginated,
         create: mockCreate,
+        update: mockUpdate,
       },
     })),
   }
@@ -282,5 +285,27 @@ describe("createProject", () => {
     mockCreate.mockRejectedValue(new Error("Creation failed"))
 
     await expect(createProject("test-token", "Fail Project")).rejects.toThrow("Failed to create project")
+  })
+})
+
+describe("updateProjectTitle", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("calls nodes.update with projectId and new title", async () => {
+    mockUpdate.mockResolvedValue(undefined)
+
+    await updateProjectTitle("test-token", "proj-123", "DMP-新しいプロジェクト名")
+
+    expect(mockUpdate).toHaveBeenCalledWith("proj-123", { title: "DMP-新しいプロジェクト名" })
+  })
+
+  it("throws Error('Failed to update project title') when nodes.update rejects", async () => {
+    mockUpdate.mockRejectedValue(new Error("Network error"))
+
+    await expect(updateProjectTitle("test-token", "proj-123", "DMP-New")).rejects.toThrow(
+      "Failed to update project title",
+    )
   })
 })

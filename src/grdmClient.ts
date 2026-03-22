@@ -896,6 +896,19 @@ export const createProject = async (token: string, projectName: string): Promise
   }
 }
 
+export const updateProjectTitle = async (
+  token: string,
+  projectId: string,
+  newTitle: string,
+): Promise<void> => {
+  try {
+    const client = createGrdmClient(token)
+    await client.nodes.update(projectId, { title: newTitle })
+  } catch (error) {
+    throw new Error("Failed to update project title", { cause: error })
+  }
+}
+
 export const listingFileNodes = async (token: string, projectId: string, folderNodeId: string | null, followPagination = false): Promise<GetFilesResponse> => {
   if (folderNodeId) {
     const url = `${GRDM_API_BASE_URL}/nodes/${projectId}/files/osfstorage/${folderNodeId}/`
