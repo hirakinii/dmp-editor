@@ -13,6 +13,7 @@ import SnackbarProvider from "../../../src/components/SnackbarProvider"
 import { initDmp } from "../../../src/dmp"
 import type { DmpFormValues } from "../../../src/dmp"
 import type { ProjectInfo } from "../../../src/grdmClient"
+import { PartialSaveError } from "../../../src/hooks/useUpdateDmp"
 import type { User } from "../../../src/hooks/useUser"
 import { theme } from "../../../src/theme"
 
@@ -45,9 +46,13 @@ vi.mock("../../../src/components/EditProject/ProjectTableSection", () => ({
 vi.mock("../../../src/components/EditProject/FileTreeSection", () => ({
   default: () => <div data-testid="file-tree-section">FileTreeSection</div>,
 }))
-vi.mock("../../../src/hooks/useUpdateDmp", () => ({
-  useUpdateDmp: () => ({ mutate: mockMutate }),
-}))
+vi.mock("../../../src/hooks/useUpdateDmp", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/hooks/useUpdateDmp")>()
+  return {
+    ...actual, // preserve PartialSaveError and other exports
+    useUpdateDmp: () => ({ mutate: mockMutate }),
+  }
+})
 vi.mock("react-router-dom", async (importOriginal) => {
   const mod = await importOriginal<typeof import("react-router-dom")>()
   return {
@@ -78,11 +83,13 @@ const mockProjects: ProjectInfo[] = []
 function FormCardWrapper({
   isNew = false,
   defaultValues,
+  project,
   onSaveStart = vi.fn(),
   onSaveEnd = vi.fn(),
 }: {
   isNew?: boolean
   defaultValues?: Partial<DmpFormValues>
+  project?: ProjectInfo | null
   onSaveStart?: () => void
   onSaveEnd?: () => void
 }) {
@@ -97,7 +104,7 @@ function FormCardWrapper({
   })
   return (
     <FormProvider {...methods}>
-      <FormCard isNew={isNew} user={mockUser} projects={mockProjects} onSaveStart={onSaveStart} onSaveEnd={onSaveEnd} />
+      <FormCard isNew={isNew} user={mockUser} project={project} projects={mockProjects} onSaveStart={onSaveStart} onSaveEnd={onSaveEnd} />
     </FormProvider>
   )
 }
@@ -523,6 +530,82 @@ describe("FormCard with Stepper", () => {
       })
     })
 
+  })
+
+  describe("PartialSaveError toast message", () => {
+    it("shows retry message in toast when PartialSaveError is thrown", async () => {
+      const user = userEvent.setup()
+      mockMutate.mockImplementation(
+        (_args: unknown, { onError }: { onError: (err: Error) => void }) => {
+          onError(new PartialSaveError(new Error("Write failed")))
+        },
+      )
+
+      renderWithProviders(<FormCardWrapper isNew={false} />)
+
+      await user.click(screen.getByText("GRDM 連携"))
+      await waitFor(() => expect(screen.getByTestId("project-table-section")).toBeInTheDocument())
+
+      await user.click(screen.getByRole("button", { name: /GRDM に保存する/ }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/プロジェクト名の変更は完了しましたが、DMP ファイルの保存に失敗しました。再度保存を実行してください。/),
+        ).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe("currentProjectTitle is passed to mutate", () => {
+    it("passes project.title as currentProjectTitle when project is provided", async () => {
+      const user = userEvent.setup()
+      mockMutate.mockImplementation(vi.fn()) // pending
+
+      const mockProject: ProjectInfo = {
+        id: "proj-123",
+        type: "nodes",
+        title: "DMP-旧プロジェクト名",
+        description: "",
+        category: "project",
+        dateCreated: "2024-01-01T00:00:00Z",
+        dateModified: "2024-01-01T00:00:00Z",
+        html: "https://example.com/proj-123",
+        self: "https://api.example.com/nodes/proj-123/",
+      }
+
+      renderWithProviders(<FormCardWrapper isNew={false} project={mockProject} />)
+
+      await user.click(screen.getByText("GRDM 連携"))
+      await waitFor(() => expect(screen.getByTestId("project-table-section")).toBeInTheDocument())
+
+      await user.click(screen.getByRole("button", { name: /GRDM に保存する/ }))
+
+      await waitFor(() => {
+        expect(mockMutate).toHaveBeenCalledWith(
+          expect.objectContaining({ currentProjectTitle: "DMP-旧プロジェクト名" }),
+          expect.anything(),
+        )
+      })
+    })
+
+    it("passes undefined as currentProjectTitle when project is null", async () => {
+      const user = userEvent.setup()
+      mockMutate.mockImplementation(vi.fn())
+
+      renderWithProviders(<FormCardWrapper isNew={false} project={null} />)
+
+      await user.click(screen.getByText("GRDM 連携"))
+      await waitFor(() => expect(screen.getByTestId("project-table-section")).toBeInTheDocument())
+
+      await user.click(screen.getByRole("button", { name: /GRDM に保存する/ }))
+
+      await waitFor(() => {
+        expect(mockMutate).toHaveBeenCalledWith(
+          expect.objectContaining({ currentProjectTitle: undefined }),
+          expect.anything(),
+        )
+      })
+    })
   })
 
   describe("save callbacks (onSaveStart / onSaveEnd)", () => {

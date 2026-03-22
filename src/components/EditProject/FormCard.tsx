@@ -26,7 +26,7 @@ import OurCard from "@/components/OurCard"
 import { DmpFormValues, todayString } from "@/dmp"
 import { ProjectInfo } from "@/grdmClient"
 import { useSnackbar } from "@/hooks/useSnackbar"
-import { useUpdateDmp } from "@/hooks/useUpdateDmp"
+import { PartialSaveError, useUpdateDmp } from "@/hooks/useUpdateDmp"
 import { User } from "@/hooks/useUser"
 
 export interface FormCardProps {
@@ -96,6 +96,9 @@ function CustomStepIcon(props: StepIconProps) {
 /** Converts a save error into a user-readable Japanese message. */
 function formatSaveError(error: unknown): string {
   const prefix = "GRDMへの保存に失敗しました"
+  if (error instanceof PartialSaveError) {
+    return `${prefix}：プロジェクト名の変更は完了しましたが、DMP ファイルの保存に失敗しました。再度保存を実行してください。`
+  }
   if (error instanceof Error) {
     if (error.name === "AbortError" || error.message.toLowerCase().includes("timeout")) {
       return `${prefix}：タイムアウト`
@@ -147,7 +150,7 @@ export default function FormCard({ sx, isNew = false, user, project, projects, i
     onSaveStart()
 
     updateMutation.mutate(
-      { projectId, isNew, formValues },
+      { projectId, isNew, formValues, currentProjectTitle: project?.title },
       {
         onSuccess: (newProjectId: string) => {
           showSnackbar("DMPを保存しました", "success")
