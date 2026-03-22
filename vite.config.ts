@@ -3,6 +3,12 @@ import path from "path"
 import { defineConfig } from "vite"
 
 // https://vite.dev/config/
+// GRDM v1 API target depends on whether dev environment is selected
+const grdmV1Target =
+  process.env.VITE_USE_GRDM_DEV_ENV === "true"
+    ? "https://rcos.rdm.nii.ac.jp"
+    : "https://rdm.nii.ac.jp"
+
 export default defineConfig({
   plugins: [react()],
   root: "./src",
@@ -51,6 +57,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/ror-api/, "/organizations"),
       },
+      // GRDM v1 API proxy to avoid CORS (v1 API does not set Access-Control-Allow-Origin)
+      "/grdm-v1-api": {
+        target: grdmV1Target,
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/grdm-v1-api/, "/api/v1"),
+      },
     },
   },
   preview: {
@@ -71,6 +83,12 @@ export default defineConfig({
         target: "https://api.ror.org",
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/ror-api/, "/organizations"),
+      },
+      // GRDM v1 API proxy to avoid CORS (v1 API does not set Access-Control-Allow-Origin)
+      "/grdm-v1-api": {
+        target: grdmV1Target,
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/grdm-v1-api/, "/api/v1"),
       },
     },
   },
