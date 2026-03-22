@@ -49,6 +49,34 @@ export const personInfoSourceSchema = z.object({
 })
 export type PersonInfoSource = z.infer<typeof personInfoSourceSchema>
 
+export const dataInfoSourceSchema = z.object({
+  dataName: valueSourceEnum.optional(),
+  publicationDate: valueSourceEnum.optional(),
+  description: valueSourceEnum.optional(),
+  acquisitionMethod: valueSourceEnum.optional(),
+  researchField: valueSourceEnum.optional(),
+  dataType: valueSourceEnum.optional(),
+  dataSize: valueSourceEnum.optional(),
+  reuseInformation: valueSourceEnum.optional(),
+  hasSensitiveData: valueSourceEnum.optional(),
+  sensitiveDataPolicy: valueSourceEnum.optional(),
+  usagePolicy: valueSourceEnum.optional(),
+  repositoryInformation: valueSourceEnum.optional(),
+  backupLocation: valueSourceEnum.optional(),
+  publicationPolicy: valueSourceEnum.optional(),
+  accessRights: valueSourceEnum.optional(),
+  plannedPublicationDate: valueSourceEnum.optional(),
+  repository: valueSourceEnum.optional(),
+  dataCreator: valueSourceEnum.optional(),
+  dataManagementAgency: valueSourceEnum.optional(),
+  rorId: valueSourceEnum.optional(),
+  dataManager: valueSourceEnum.optional(),
+  dataManagerContact: valueSourceEnum.optional(),
+  dataStorageLocation: valueSourceEnum.optional(),
+  dataStoragePeriod: valueSourceEnum.optional(),
+})
+export type DataInfoSource = z.infer<typeof dataInfoSourceSchema>
+
 export const personInfoSchema = z.object({
   role: z.array(z.enum(personRole)), // no header
   lastName: z.string(), // 性
@@ -121,6 +149,8 @@ export const dataInfoSchema = z.object({
   dataManagerContact: z.string(), // データ管理者の連絡先
   dataStorageLocation: z.string().nullable().optional(), // 研究データの保存場所 (研究事業終了後)
   dataStoragePeriod: z.string().nullable().optional(), // 研究データの保存期間 (研究事業終了後)
+
+  source: dataInfoSourceSchema.optional(), // origin of each field's value
 
   // for linking with GRDM
   linkedGrdmFiles: z.array(fileNodeSchema),
@@ -224,6 +254,7 @@ export const initDataInfo = (): DataInfo => {
     dataManagerContact: "",
     dataStorageLocation: undefined,
     dataStoragePeriod: undefined,
+    source: undefined,
     linkedGrdmFiles: [],
   }
 }

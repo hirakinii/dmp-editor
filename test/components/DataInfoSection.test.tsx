@@ -10,13 +10,22 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import DataInfoSection from "../../src/components/EditProject/DataInfoSection"
 import SnackbarProvider from "../../src/components/SnackbarProvider"
-import { initDmp } from "../../src/dmp"
-import type { DmpFormValues, ResearchPhase } from "../../src/dmp"
+import { initDataInfo, initDmp } from "../../src/dmp"
+import type { DataInfo, DmpFormValues, ResearchPhase } from "../../src/dmp"
 import type { User } from "../../src/hooks/useUser"
 import { theme } from "../../src/theme"
 
 vi.mock("@/hooks/useRorSearch", () => ({
   useRorSearch: () => ({ results: [], isLoading: false, isError: false }),
+}))
+
+vi.mock("@/hooks/useGrdmFileItemMetadata", () => ({
+  useGrdmFileItemMetadata: () => ({
+    data: null,
+    isFetching: false,
+    isError: false,
+    refetch: vi.fn(),
+  }),
 }))
 
 const mockUser: User = {
@@ -35,7 +44,13 @@ const mockUser: User = {
   profileImage: "https://example.com/profile.jpg",
 }
 
-function DataInfoSectionWrapper({ researchPhase }: { researchPhase: ResearchPhase }) {
+function DataInfoSectionWrapper({
+  researchPhase,
+  initialDataInfos,
+}: {
+  researchPhase: ResearchPhase
+  initialDataInfos?: DataInfo[]
+}) {
   const dmp = initDmp(null)
   const methods = useForm<DmpFormValues>({
     defaultValues: {
@@ -45,6 +60,7 @@ function DataInfoSectionWrapper({ researchPhase }: { researchPhase: ResearchPhas
           ...dmp.metadata,
           researchPhase,
         },
+        dataInfo: initialDataInfos ?? [],
       },
     },
     mode: "onBlur",
@@ -175,7 +191,7 @@ describe("DataInfoSection - phase-based validation", () => {
 
       await user.click(screen.getByRole("button", { name: /データを追加する/ }))
 
-      const labelEl = screen.getByText("データの公開予定日")
+      const labelEl = await screen.findByText("データの公開予定日")
       const asterisk = labelEl.querySelector("span")
       expect(asterisk).toBeNull()
     })
@@ -197,9 +213,189 @@ describe("DataInfoSection - phase-based validation", () => {
 
       await user.click(screen.getByRole("button", { name: /データを追加する/ }))
 
-      const labelEl = screen.getByText("データの公開予定日")
+      const labelEl = await screen.findByText("データの公開予定日")
       const asterisk = labelEl.querySelector("span")
       expect(asterisk).not.toBeNull()
+    })
+  })
+})
+
+describe("DataInfoSection - accordion behavior", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("opens accordion inline when 編集 button is clicked", async () => {
+    const user = userEvent.setup()
+    const dataInfo: DataInfo = {
+      ...initDataInfo(),
+      dataName: "テストデータ",
+      researchField: "ライフサイエンス",
+      dataType: "データセット",
+    }
+    renderWithProviders(
+      <DataInfoSectionWrapper researchPhase="計画時" initialDataInfos={[dataInfo]} />,
+    )
+
+    // The accordion form should not be visible initially
+    expect(screen.queryByRole("button", { name: "保存" })).toBeNull()
+
+    // Click the 編集 button
+    await user.click(screen.getByRole("button", { name: /編集/ }))
+
+    // Form should now be visible inline (not in a dialog)
+    expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument()
+  })
+
+  it("closes accordion when キャンセル button is clicked", async () => {
+    const user = userEvent.setup()
+    const dataInfo: DataInfo = {
+      ...initDataInfo(),
+      dataName: "テストデータ",
+      researchField: "ライフサイエンス",
+      dataType: "データセット",
+    }
+    renderWithProviders(
+      <DataInfoSectionWrapper researchPhase="計画時" initialDataInfos={[dataInfo]} />,
+    )
+
+    await user.click(screen.getByRole("button", { name: /編集/ }))
+    expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: /キャンセル/ }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "保存" })).toBeNull()
+    })
+  })
+
+  it("opens add form inline when データを追加する is clicked", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<DataInfoSectionWrapper researchPhase="計画時" />)
+
+    await user.click(screen.getByRole("button", { name: /データを追加する/ }))
+
+    expect(await screen.findByRole("button", { name: "追加" })).toBeInTheDocument()
+  })
+})
+
+describe("DataInfoSection - source badge", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("shows GRDMファイルメタデータ badge when source.dataName is grdm", async () => {
+    const user = userEvent.setup()
+    const dataInfo: DataInfo = {
+      ...initDataInfo(),
+      dataName: "GRDM由来データ",
+      researchField: "ライフサイエンス",
+      dataType: "データセット",
+      source: { dataName: "grdm" },
+    }
+    renderWithProviders(
+      <DataInfoSectionWrapper researchPhase="計画時" initialDataInfos={[dataInfo]} />,
+    )
+
+    await user.click(screen.getByRole("button", { name: /編集/ }))
+
+    await waitFor(() => {
+      expect(screen.getByText("GRDMファイルメタデータ")).toBeInTheDocument()
+    })
+  })
+
+  it("shows ユーザーによる入力 badge when source.dataName is manual", async () => {
+    const user = userEvent.setup()
+    const dataInfo: DataInfo = {
+      ...initDataInfo(),
+      dataName: "手動入力データ",
+      researchField: "ライフサイエンス",
+      dataType: "データセット",
+      source: { dataName: "manual" },
+    }
+    renderWithProviders(
+      <DataInfoSectionWrapper researchPhase="計画時" initialDataInfos={[dataInfo]} />,
+    )
+
+    await user.click(screen.getByRole("button", { name: /編集/ }))
+
+    await waitFor(() => {
+      expect(screen.getByText("ユーザーによる入力")).toBeInTheDocument()
+    })
+  })
+
+  it("shows no source badge when source is undefined", async () => {
+    const user = userEvent.setup()
+    const dataInfo: DataInfo = {
+      ...initDataInfo(),
+      dataName: "未設定データ",
+      researchField: "ライフサイエンス",
+      dataType: "データセット",
+      source: undefined,
+    }
+    renderWithProviders(
+      <DataInfoSectionWrapper researchPhase="計画時" initialDataInfos={[dataInfo]} />,
+    )
+
+    await user.click(screen.getByRole("button", { name: /編集/ }))
+
+    await waitFor(() => {
+      expect(screen.queryByText("GRDMファイルメタデータ")).toBeNull()
+      expect(screen.queryByText("ユーザーによる入力")).toBeNull()
+    })
+  })
+})
+
+describe("DataInfoSection - GRDM metadata fetch button", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("disables the fetch button when no linked GRDM files exist", async () => {
+    const user = userEvent.setup()
+    const dataInfo: DataInfo = {
+      ...initDataInfo(),
+      dataName: "リンクなしデータ",
+      researchField: "ライフサイエンス",
+      dataType: "データセット",
+      linkedGrdmFiles: [],
+    }
+    renderWithProviders(
+      <DataInfoSectionWrapper researchPhase="計画時" initialDataInfos={[dataInfo]} />,
+    )
+
+    await user.click(screen.getByRole("button", { name: /編集/ }))
+
+    await waitFor(() => {
+      const fetchButton = screen.getByRole("button", { name: /GRDMメタデータを取得/ })
+      expect(fetchButton).toBeDisabled()
+    })
+  })
+
+  it("enables the fetch button when linked GRDM files exist", async () => {
+    const user = userEvent.setup()
+    const dataInfo: DataInfo = {
+      ...initDataInfo(),
+      dataName: "リンクありデータ",
+      researchField: "ライフサイエンス",
+      dataType: "データセット",
+      linkedGrdmFiles: [{
+        projectId: "proj123",
+        nodeId: "node456",
+        label: "test.csv",
+        materialized_path: "/test.csv",
+        type: "file",
+      }],
+    }
+    renderWithProviders(
+      <DataInfoSectionWrapper researchPhase="計画時" initialDataInfos={[dataInfo]} />,
+    )
+
+    await user.click(screen.getByRole("button", { name: /編集/ }))
+
+    await waitFor(() => {
+      const fetchButton = screen.getByRole("button", { name: /GRDMメタデータを取得/ })
+      expect(fetchButton).toBeEnabled()
     })
   })
 })
