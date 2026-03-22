@@ -66,7 +66,9 @@ function ProjectTableHeader() {
         <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "15%" }}>
           {"最終更新日"}
         </TableCell>
-        <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "35%" }} />
+        <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "35%" }}>
+          {"操作"}
+        </TableCell>
       </TableRow>
     </TableHead>
   )
