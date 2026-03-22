@@ -1,24 +1,32 @@
+import DownloadingOutlined from "@mui/icons-material/DownloadingOutlined"
 import {
   Box,
   Button,
+  CircularProgress,
+  IconButton,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
   colors,
   Paper,
 } from "@mui/material"
+import { useState } from "react"
+import { useErrorBoundary } from "react-error-boundary"
 import { Link, useParams } from "react-router-dom"
 
-import ExportDmpCard from "@/components/EditProject/ExportDmpCard"
+import grdmLogoMark from "@/assets/grdm_logo_mark.png"
 import Frame from "@/components/Frame"
 import Loading from "@/components/Loading"
 import OurCard from "@/components/OurCard"
+import { GRDM_CONFIG } from "@/config"
 import type { DataInfo, PersonInfo } from "@/dmp"
 import { useDmp } from "@/hooks/useDmp"
+import { exportToJspsExcel } from "@/jspsExport"
 
 // --- Sub-components ---
 
@@ -126,6 +134,27 @@ function DataInfoTable({ dataList }: { dataList: DataInfo[] }) {
 export default function DetailProject() {
   const { projectId = "" } = useParams<{ projectId: string }>()
   const dmpQuery = useDmp(projectId)
+  const { showBoundary } = useErrorBoundary()
+  const [isDownloading, setIsDownloading] = useState(false)
+
+  const handleDownload = async () => {
+    setIsDownloading(true)
+    try {
+      const name = dmpQuery.data?.projectInfo.projectName || "untitled"
+      const blob = await exportToJspsExcel(dmpQuery.data!)
+      const filename = `dmp-jsps-${name}.xlsx`
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      showBoundary(error)
+    } finally {
+      setIsDownloading(false)
+    }
+  }
 
   if (dmpQuery.isLoading) {
     return (
@@ -146,16 +175,43 @@ export default function DetailProject() {
         {/* Header */}
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Typography sx={{ fontSize: "1.5rem" }} component="h1">
-            {"DMP Project の詳細"}
+            {`DMP「${dmp.projectInfo.projectName}」`}
           </Typography>
-          <Button
-            component={Link}
-            to={`/projects/${projectId}`}
-            variant="contained"
-            color="primary"
-          >
-            {"編集する"}
-          </Button>
+          <Box sx={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <Button
+              component={Link}
+              to={`/projects/${projectId}`}
+              variant="contained"
+              color="primary"
+            >
+              {"編集する"}
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={handleDownload}
+              disabled={isDownloading}
+              startIcon={isDownloading ? <CircularProgress size={20} /> : <DownloadingOutlined />}
+            >
+              {isDownloading ? "出力中..." : "出力"}
+            </Button>
+            <Tooltip title="GRDM プロジェクトを開く">
+              <IconButton
+                component="a"
+                href={`${GRDM_CONFIG.BASE_URL}/${projectId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="GRDM"
+              >
+                <Box
+                  component="img"
+                  src={grdmLogoMark}
+                  alt="GRDM"
+                  sx={{ width: 28, height: 28 }}
+                />
+              </IconButton>
+            </Tooltip>
+          </Box>
         </Box>
 
         {/* DMP 作成・更新情報 */}
@@ -185,11 +241,6 @@ export default function DetailProject() {
         <SectionTitle>{"研究データ情報"}</SectionTitle>
         <DataInfoTable dataList={dmp.dataInfo} />
       </OurCard>
-      <ExportDmpCard
-        sx={{ mt: "1.5rem" }}
-        dmp={dmp}
-        projectName={dmp.projectInfo.projectName}
-      />
     </Frame>
   )
 }
