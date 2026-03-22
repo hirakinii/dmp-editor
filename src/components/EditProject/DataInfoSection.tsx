@@ -1,27 +1,70 @@
+import type { GrdmFileItem , GrdmFileMetadataSchema } from "@hirakinii-packages/grdm-api-typescript"
 import AddLinkOutlined from "@mui/icons-material/AddLinkOutlined"
 import AddOutlined from "@mui/icons-material/AddOutlined"
 import ArrowDownwardOutlined from "@mui/icons-material/ArrowDownwardOutlined"
 import ArrowUpwardOutlined from "@mui/icons-material/ArrowUpwardOutlined"
+import CloudDownloadOutlined from "@mui/icons-material/CloudDownloadOutlined"
 import DeleteOutline from "@mui/icons-material/DeleteOutline"
 import EditOutlined from "@mui/icons-material/EditOutlined"
+import ExpandLessOutlined from "@mui/icons-material/ExpandLessOutlined"
 import LinkOffOutlined from "@mui/icons-material/LinkOffOutlined"
 import OpenInNew from "@mui/icons-material/OpenInNew"
-import { Autocomplete, Box, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, FormControl, Chip, TableContainer, Paper, Table, TableHead, TableCell, TableRow, TableBody, colors, Select, FormHelperText, Typography, Link } from "@mui/material"
+import {
+  Autocomplete,
+  Box,
+  Button,
+  Checkbox,
+  Chip,
+  CircularProgress,
+  Collapse,
+  colors,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  FormHelperText,
+  Link,
+  MenuItem,
+  Paper,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from "@mui/material"
 import { SxProps } from "@mui/system"
-import React, { useEffect, useRef, useState } from "react"
-import { useFormContext, useFieldArray, Controller, useForm, useFormState, FormProvider, useWatch } from "react-hook-form"
+import React, { useEffect, useState } from "react"
+import {
+  Controller,
+  FormProvider,
+  useFieldArray,
+  useForm,
+  useFormContext,
+  useFormState,
+  useWatch,
+} from "react-hook-form"
 
 import HelpChip from "@/components/EditProject/HelpChip"
 import OurFormLabel from "@/components/EditProject/OurFormLabel"
 import SectionHeader from "@/components/EditProject/SectionHeader"
 import { accessRights, dataType, hasSensitiveData, initDataInfo, researchField } from "@/dmp"
-import type { DataInfo, DmpFormValues, ResearchPhase } from "@/dmp"
+import type { DataInfo, DataInfoSource, DmpFormValues, ResearchPhase, ValueSource } from "@/dmp"
 import { formatDateToTimezone, ProjectInfo } from "@/grdmClient"
+import { useGrdmFileItemMetadata } from "@/hooks/useGrdmFileItemMetadata"
 import type { RorOrganization } from "@/hooks/useRorSearch"
 import { useRorSearch } from "@/hooks/useRorSearch"
 import { useSnackbar } from "@/hooks/useSnackbar"
 import { User } from "@/hooks/useUser"
 import theme from "@/theme"
+
+// ============================================================
+// Types
+// ============================================================
 
 interface FormData {
   key: keyof DataInfo
@@ -35,6 +78,10 @@ interface FormData {
   helpChip?: React.ReactNode
   minRows?: number
 }
+
+// ============================================================
+// Field configuration
+// ============================================================
 
 const formData: FormData[] = [
   {
@@ -200,7 +247,7 @@ const formData: FormData[] = [
   {
     key: "plannedPublicationDate",
     label: "データの公開予定日",
-    required: false,
+    required: false, // dynamic: required only in 報告時
     type: "date",
   },
   {
@@ -223,7 +270,7 @@ const formData: FormData[] = [
     required: false,
     helperText: "これらの選択肢は、担当者情報から生成されます",
     type: "select",
-    options: [], // update before use based on person info
+    options: [], // updated dynamically based on person info
   },
   {
     key: "dataManagementAgency",
@@ -284,6 +331,45 @@ const formData: FormData[] = [
   },
 ]
 
+// ============================================================
+// GRDM field mapping
+// ============================================================
+
+interface GrdmFieldMapping {
+  dataInfoKey: keyof DataInfo
+  grdmKey: keyof GrdmFileMetadataSchema
+  label: string
+}
+
+const GRDM_FIELD_MAP: GrdmFieldMapping[] = [
+  { dataInfoKey: "dataName", grdmKey: "grdm-file:title-ja", label: "名称" },
+  { dataInfoKey: "publicationDate", grdmKey: "grdm-file:date-issued-updated", label: "掲載日・掲載更新日" },
+  { dataInfoKey: "description", grdmKey: "grdm-file:data-description-ja", label: "説明" },
+  { dataInfoKey: "researchField", grdmKey: "grdm-file:data-research-field", label: "データの分野" },
+  { dataInfoKey: "dataType", grdmKey: "grdm-file:data-type", label: "データの種別" },
+  { dataInfoKey: "dataSize", grdmKey: "grdm-file:file-size", label: "概略データ量" },
+  { dataInfoKey: "accessRights", grdmKey: "grdm-file:access-rights", label: "アクセス権" },
+  { dataInfoKey: "plannedPublicationDate",grdmKey: "grdm-file:available-date", label: "データの公開予定日" },
+  { dataInfoKey: "repositoryInformation", grdmKey: "grdm-file:repo-information-ja", label: "リポジトリ情報 (研究活動時)" },
+  { dataInfoKey: "repository", grdmKey: "grdm-file:repo-url-doi-link", label: "リポジトリ情報 (研究活動後)" },
+  { dataInfoKey: "dataManagementAgency", grdmKey: "grdm-file:hosting-inst-ja", label: "データ管理機関" },
+  { dataInfoKey: "rorId", grdmKey: "grdm-file:hosting-inst-id", label: "データ管理機関コード (ROR ID)" },
+  { dataInfoKey: "dataManager", grdmKey: "grdm-file:data-man-name-ja", label: "データ管理者" },
+  { dataInfoKey: "dataManagerContact", grdmKey: "grdm-file:data-man-email", label: "データ管理者の連絡先" },
+]
+
+const getGrdmFieldValue = (fileItem: GrdmFileItem, grdmKey: keyof GrdmFileMetadataSchema): string | null => {
+  const activeSchema = fileItem.items.find((s) => s.active)
+  if (!activeSchema) return null
+  const field = activeSchema[grdmKey] as { value?: unknown } | undefined
+  if (!field?.value) return null
+  return String(field.value)
+}
+
+// ============================================================
+// byteSizeToHumanReadable helper
+// ============================================================
+
 const byteSizeToHumanReadable = (size?: number | null, decimals = 2): string => {
   if (typeof size !== "number" || !isFinite(size) || size < 0) return "N/A"
 
@@ -299,19 +385,45 @@ const byteSizeToHumanReadable = (size?: number | null, decimals = 2): string => 
   return `${readableSize.toFixed(i === 0 ? 0 : decimals)} ${units[i]}`
 }
 
+// ============================================================
+// SourceBadge — shows the origin of a field value
+// ============================================================
+
+function SourceBadge({ source }: { source?: ValueSource }) {
+  if (!source) return null
+  const labels: Record<ValueSource, string> = {
+    grdm: "GRDMファイルメタデータ",
+    manual: "ユーザーによる入力",
+    kaken: "KAKEN",
+  }
+  const chipColors: Record<ValueSource, "success" | "default" | "info"> = {
+    grdm: "success",
+    manual: "default",
+    kaken: "info",
+  }
+  return (
+    <Chip
+      label={labels[source]}
+      color={chipColors[source]}
+      size="small"
+      sx={{ ml: 0.5, fontSize: "0.65rem", height: "18px" }}
+    />
+  )
+}
+
+// ============================================================
+// DataManagementAgencyField — Autocomplete with ROR search
+// ============================================================
+
 interface DataManagementAgencyFieldProps {
   label: string
   required: boolean
   helpChip?: React.ReactNode
+  source?: ValueSource
+  onSourceChange: (source: ValueSource) => void
 }
 
-/**
- * Autocomplete field for the data management agency with ROR organization search.
- * Fetches suggestions from the ROR API via the /ror-api proxy (debounced 300ms).
- * When an option is selected, both `dataManagementAgency` and `rorId` are set automatically.
- * Free text input is also supported.
- */
-function DataManagementAgencyField({ label, required, helpChip }: DataManagementAgencyFieldProps) {
+function DataManagementAgencyField({ label, required, helpChip, source, onSourceChange }: DataManagementAgencyFieldProps) {
   const { control, setValue } = useFormContext<DataInfo>()
   const [searchQuery, setSearchQuery] = useState("")
   const { results, isLoading, isError } = useRorSearch(searchQuery)
@@ -331,6 +443,7 @@ function DataManagementAgencyField({ label, required, helpChip }: DataManagement
           <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
             <OurFormLabel label={label} required={required} />
             {helpChip && <HelpChip text={helpChip} />}
+            <SourceBadge source={source} />
           </Box>
           <Autocomplete<RorOrganization, false, false, true>
             freeSolo
@@ -339,21 +452,19 @@ function DataManagementAgencyField({ label, required, helpChip }: DataManagement
             getOptionLabel={(option) => typeof option === "string" ? option : (option.name ?? "")}
             inputValue={field.value ?? ""}
             onInputChange={(_, newValue, reason) => {
-              // Always keep the form field in sync with the input text
-              console.log(results)
               field.onChange(newValue)
-              // Only trigger search when the user is actively typing or clearing
               if (reason === "input" || reason === "clear") {
                 setSearchQuery(newValue)
+              }
+              if (reason === "input") {
+                onSourceChange("manual")
               }
             }}
             onChange={(_, newValue) => {
               if (newValue !== null && typeof newValue !== "string") {
-                // ROR option selected: set both agency name and ROR ID
                 field.onChange(newValue.name)
                 setValue("rorId", newValue.id, { shouldDirty: true })
               } else if (newValue === null) {
-                // Cleared via X button: also clear the ROR ID
                 setValue("rorId", undefined, { shouldDirty: true })
               }
             }}
@@ -397,15 +508,222 @@ function DataManagementAgencyField({ label, required, helpChip }: DataManagement
   )
 }
 
-interface DataInfoSectionProps {
-  sx?: SxProps
-  user: User
-  projects: ProjectInfo[]
+// ============================================================
+// GrdmCompareModal — compare current values vs GRDM metadata
+// ============================================================
+
+interface GrdmCompareModalProps {
+  open: boolean
+  onClose: () => void
+  fileItem: GrdmFileItem
+  getCurrentValue: (key: keyof DataInfo) => string
+  onApply: (keys: (keyof DataInfo)[], values: Partial<DataInfo>) => void
 }
 
-export default function DataInfoSection({ sx, user, projects }: DataInfoSectionProps) {
-  const { control } = useFormContext<DmpFormValues>()
-  const researchPhase = useWatch({ control, name: "dmp.metadata.researchPhase" }) as ResearchPhase
+function GrdmCompareModal({ open, onClose, fileItem, getCurrentValue, onApply }: GrdmCompareModalProps) {
+  const mappedFields = GRDM_FIELD_MAP.map((m) => ({
+    ...m,
+    currentValue: getCurrentValue(m.dataInfoKey),
+    grdmValue: getGrdmFieldValue(fileItem, m.grdmKey),
+  })).filter((f) => f.grdmValue !== null)
+
+  const [selectedKeys, setSelectedKeys] = useState<Set<keyof DataInfo>>(new Set())
+
+  const toggleKey = (key: keyof DataInfo) => {
+    setSelectedKeys((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
+
+  const buildValues = (keys: (keyof DataInfo)[]): Partial<DataInfo> => {
+    const values: Partial<DataInfo> = {}
+    for (const { dataInfoKey, grdmValue } of mappedFields) {
+      if (keys.includes(dataInfoKey) && grdmValue !== null) {
+        (values as Record<string, unknown>)[dataInfoKey] = grdmValue
+      }
+    }
+    return values
+  }
+
+  const handleApplySelected = () => {
+    const keys = Array.from(selectedKeys)
+    onApply(keys, buildValues(keys))
+    onClose()
+  }
+
+  const handleApplyAll = () => {
+    const keys = mappedFields.map((f) => f.dataInfoKey)
+    onApply(keys, buildValues(keys))
+    onClose()
+  }
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg" closeAfterTransition={false}>
+      <DialogTitle sx={{ mt: "0.5rem", mx: "1rem" }}>
+        {"GRDMファイルメタデータとの比較"}
+      </DialogTitle>
+      <DialogContent sx={{ mx: "1rem" }}>
+        <Typography variant="body2" sx={{ mb: "1rem", color: "text.secondary" }}>
+          {"採用する項目のチェックボックスを選択してください。"}
+        </Typography>
+        <TableContainer component={Paper} variant="outlined" sx={{ borderBottom: "none" }}>
+          <Table size="small">
+            <TableHead sx={{ backgroundColor: colors.grey[100] }}>
+              <TableRow>
+                <TableCell sx={{ fontWeight: "bold", width: "20%" }}>{"項目"}</TableCell>
+                <TableCell sx={{ fontWeight: "bold", width: "35%" }}>{"現在の値"}</TableCell>
+                <TableCell sx={{ fontWeight: "bold", width: "35%" }}>{"GRDMファイルメタデータ"}</TableCell>
+                <TableCell sx={{ fontWeight: "bold", width: "10%", textAlign: "center" }}>{"採用"}</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {mappedFields.map(({ dataInfoKey, label, currentValue, grdmValue }) => (
+                <TableRow key={dataInfoKey}>
+                  <TableCell sx={{ verticalAlign: "top" }}>{label}</TableCell>
+                  <TableCell sx={{ verticalAlign: "top", color: "text.secondary", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                    {currentValue || "（空）"}
+                  </TableCell>
+                  <TableCell sx={{ verticalAlign: "top", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                    {grdmValue}
+                  </TableCell>
+                  <TableCell sx={{ textAlign: "center", verticalAlign: "top" }}>
+                    <Checkbox
+                      size="small"
+                      checked={selectedKeys.has(dataInfoKey)}
+                      onChange={() => toggleKey(dataInfoKey)}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </DialogContent>
+      <DialogActions sx={{ m: "0.5rem 1.5rem 1.5rem", gap: "0.5rem", flexWrap: "wrap" }}>
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={handleApplyAll}
+          children="GRDMファイルメタデータを全て反映させる"
+        />
+        <Button
+          variant="outlined"
+          color="secondary"
+          onClick={handleApplySelected}
+          disabled={selectedKeys.size === 0}
+          children="選択した項目を反映させる"
+        />
+        <Button
+          variant="outlined"
+          color="secondary"
+          onClick={onClose}
+          children="閉じる"
+        />
+      </DialogActions>
+    </Dialog>
+  )
+}
+
+// ============================================================
+// DataInfoForm — accordion content (edit / add form)
+// ============================================================
+
+interface DataInfoFormProps {
+  index: number
+  totalCount: number
+  onSubmit: (data: DataInfo) => void
+  onClose: () => void
+  researchPhase: ResearchPhase
+  personNames: string[]
+}
+
+function DataInfoForm({ index, totalCount, onSubmit, onClose, researchPhase, personNames }: DataInfoFormProps) {
+  const dialogMethods = useForm<DataInfo>({
+    defaultValues: initDataInfo(),
+    mode: "onBlur",
+    reValidateMode: "onBlur",
+  })
+  const { isValid, isSubmitted } = useFormState({ control: dialogMethods.control })
+
+  // Sync initial values from parent form when the accordion opens
+  const dataInfos = useWatch<DmpFormValues>({
+    name: "dmp.dataInfo",
+    defaultValue: [],
+  }) as DmpFormValues["dmp"]["dataInfo"]
+
+  // Reset form with current values when the component mounts
+  useState(() => {
+    if (index < totalCount) {
+      dialogMethods.reset(dataInfos[index] as DataInfo)
+    } else {
+      dialogMethods.reset(initDataInfo())
+    }
+  })
+
+  const isAddMode = index === totalCount
+
+  // GRDM file metadata fetch
+  const linkedFiles = dialogMethods.watch("linkedGrdmFiles") ?? []
+  const firstLinkedFile = linkedFiles[0] ?? null
+  const {
+    data: grdmFileItem,
+    isFetching: isGrdmFetching,
+    refetch: refetchGrdm,
+  } = useGrdmFileItemMetadata(firstLinkedFile?.projectId, firstLinkedFile?.materialized_path)
+
+  const [compareOpen, setCompareOpen] = useState(false)
+
+  // Open compare modal automatically when GRDM metadata is fetched
+  useEffect(() => {
+    if (grdmFileItem) {
+      setCompareOpen(true)
+    }
+  }, [grdmFileItem])
+
+  const handleGrdmFetch = async () => {
+    await refetchGrdm()
+  }
+
+  // ---- Value helpers ----
+
+  const getValue = <K extends keyof DataInfo>(key: K): DataInfo[K] => {
+    const value = dialogMethods.getValues(key)
+    if (value === undefined || value === null) return "" as DataInfo[K]
+    if (key === "dataCreator") return (personNames[(value as number) - 1] ?? "") as DataInfo[K]
+    return value
+  }
+
+  const getDisplayValue = (key: keyof DataInfo): string => {
+    const value = getValue(key)
+    if (value === undefined || value === null || value === "") return ""
+    if (Array.isArray(value)) return (value as unknown[]).map(String).join(", ")
+    return String(value)
+  }
+
+  const getOptions = <K extends keyof DataInfo>(key: K): string[] => {
+    if (key === "dataCreator") return personNames
+    return formData.find((item) => item.key === key)?.options ?? []
+  }
+
+  const updateValue = <K extends keyof DataInfo>(key: K, value: DataInfo[K]) => {
+    let newValue: DataInfo[K] = value
+    if (key === "dataCreator") {
+      newValue = (personNames.indexOf(value as string) + 1) as DataInfo[K]
+    }
+    if (newValue === "") {
+      newValue = undefined as DataInfo[K]
+    }
+    dialogMethods.setValue(key, newValue as never, { shouldDirty: true })
+    // Track as manually edited
+    const currentSource = dialogMethods.getValues("source") ?? {}
+    dialogMethods.setValue("source", { ...currentSource, [key]: "manual" } as never)
+  }
 
   const getEffectiveRequired = (key: keyof DataInfo, staticRequired: boolean): boolean => {
     switch (key) {
@@ -419,6 +737,210 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
     }
   }
 
+  const getValidationRules = <K extends keyof DataInfo>(key: K, staticRequired: boolean, label: string) => {
+    const effectiveRequired = getEffectiveRequired(key, staticRequired)
+    if (effectiveRequired) return { required: `${label} は必須です` }
+    if (key === "plannedPublicationDate") {
+      const accessRightsValue = dialogMethods.getValues("accessRights")
+      if (accessRightsValue === "公開期間猶予") {
+        return { required: "アクセス権が「公開期間猶予」の場合、公開予定日を入力してください" }
+      }
+    }
+    return {}
+  }
+
+  // ---- GRDM compare apply ----
+
+  const handleGrdmApply = (keys: (keyof DataInfo)[], values: Partial<DataInfo>) => {
+    const currentSource: DataInfoSource = dialogMethods.getValues("source") ?? {}
+    const newSource: DataInfoSource = { ...currentSource }
+    for (const key of keys) {
+      const val = (values as Record<string, unknown>)[key as string]
+      if (val !== undefined) {
+        dialogMethods.setValue(key as never, val as never, { shouldDirty: true })
+        ;(newSource as Record<string, unknown>)[key as string] = "grdm"
+      }
+    }
+    dialogMethods.setValue("source", newSource as never)
+    dialogMethods.trigger()
+  }
+
+  const handleSubmit = (data: DataInfo) => {
+    onSubmit(data)
+  }
+
+  const getFieldSource = (key: keyof DataInfo): ValueSource | undefined => {
+    return dialogMethods.watch("source")?.[key as keyof DataInfoSource] as ValueSource | undefined
+  }
+
+  return (
+    <FormProvider {...dialogMethods}>
+      <Box sx={{ p: "1.5rem", backgroundColor: colors.grey[50], borderTop: `1px solid ${colors.grey[300]}` }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: "1rem" }}>
+          {isAddMode ? "管理対象データの追加" : "管理対象データの編集"}
+        </Typography>
+
+        {/* Form fields */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          {formData.map(({ key, label, required: staticRequired, helperText, placeholder, type, selectMultiple, helpChip, minRows }) => {
+            const effectiveRequired = getEffectiveRequired(key, staticRequired)
+            const fieldSource = getFieldSource(key)
+
+            // Special header area for dataName: shows GRDM fetch button alongside
+            const isDataNameField = key === "dataName"
+
+            // Render the data management agency field with ROR API autocomplete
+            if (key === "dataManagementAgency") {
+              return (
+                <DataManagementAgencyField
+                  key={key}
+                  label={label}
+                  required={effectiveRequired}
+                  helpChip={helpChip}
+                  source={fieldSource}
+                  onSourceChange={() => {
+                    const currentSource = dialogMethods.getValues("source") ?? {}
+                    dialogMethods.setValue("source", { ...currentSource, dataManagementAgency: "manual" } as never)
+                  }}
+                />
+              )
+            }
+
+            return (
+              <Controller
+                key={key}
+                name={key}
+                control={dialogMethods.control}
+                rules={getValidationRules(key, staticRequired, label)}
+                render={({ field, fieldState: { error } }) => (
+                  <FormControl fullWidth>
+                    <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                      <OurFormLabel label={label} required={effectiveRequired} />
+                      {helpChip && <HelpChip text={helpChip} />}
+                      <SourceBadge source={fieldSource} />
+                      {isDataNameField && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="info"
+                          startIcon={isGrdmFetching ? <CircularProgress size={14} /> : <CloudDownloadOutlined />}
+                          onClick={handleGrdmFetch}
+                          disabled={!firstLinkedFile || isGrdmFetching}
+                          sx={{ ml: "auto", textTransform: "none", whiteSpace: "nowrap" }}
+                          children="GRDMメタデータを取得"
+                        />
+                      )}
+                    </Box>
+                    {!selectMultiple ? (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        variant="outlined"
+                        error={!!error}
+                        helperText={error?.message ?? helperText}
+                        placeholder={placeholder}
+                        value={getValue(key)}
+                        onChange={(e) => updateValue(key, e.target.value)}
+                        type={type === "date" ? "date" : "text"}
+                        select={type === "select"}
+                        size="small"
+                        multiline={minRows !== undefined && minRows > 1}
+                        minRows={minRows}
+                      >
+                        {type === "select" &&
+                          getOptions(key).map((option) => (
+                            <MenuItem key={option} value={option} children={option} />
+                          ))}
+                      </TextField>
+                    ) : (
+                      <>
+                        <Select
+                          {...field}
+                          value={field.value ?? []}
+                          fullWidth
+                          variant="outlined"
+                          error={!!error}
+                          multiple
+                          size="small"
+                          onChange={(e) => {
+                            field.onChange(e)
+                            const currentSource = dialogMethods.getValues("source") ?? {}
+                            dialogMethods.setValue("source", { ...currentSource, [key]: "manual" } as never)
+                          }}
+                          renderValue={(selected) => (
+                            <Box sx={{ display: "flex", flexDirection: "row", gap: "0.5rem" }}>
+                              {(selected as unknown as string[]).map((value) => (
+                                <Chip key={value} label={value} />
+                              ))}
+                            </Box>
+                          )}
+                        >
+                          {getOptions(key).map((option) => (
+                            <MenuItem key={option} value={option} children={option} />
+                          ))}
+                        </Select>
+                        <FormHelperText error={!!error} children={error?.message ?? helperText} />
+                      </>
+                    )}
+                  </FormControl>
+                )}
+              />
+            )
+          })}
+        </Box>
+
+        {/* Actions */}
+        <Box sx={{ display: "flex", flexDirection: "row", gap: "1rem", mt: "1.5rem", justifyContent: "flex-start" }}>
+          <Button
+            type="submit"
+            children={isAddMode ? "追加" : "保存"}
+            variant="contained"
+            color="secondary"
+            disabled={isSubmitted && !isValid}
+            onClick={dialogMethods.handleSubmit(handleSubmit)}
+          />
+          <Button
+            children="キャンセル"
+            onClick={onClose}
+            variant="outlined"
+            color="secondary"
+            startIcon={<ExpandLessOutlined />}
+          />
+        </Box>
+      </Box>
+
+      {/* GRDM compare modal */}
+      {grdmFileItem && compareOpen && (
+        <GrdmCompareModal
+          open={compareOpen}
+          onClose={() => setCompareOpen(false)}
+          fileItem={grdmFileItem}
+          getCurrentValue={getDisplayValue}
+          onApply={handleGrdmApply}
+        />
+      )}
+    </FormProvider>
+  )
+}
+
+// ============================================================
+// DataInfoSectionProps
+// ============================================================
+
+interface DataInfoSectionProps {
+  sx?: SxProps
+  user: User
+  projects: ProjectInfo[]
+}
+
+// ============================================================
+// DataInfoSection — main component
+// ============================================================
+
+export default function DataInfoSection({ sx, user, projects }: DataInfoSectionProps) {
+  const { control } = useFormContext<DmpFormValues>()
+  const researchPhase = useWatch({ control, name: "dmp.metadata.researchPhase" }) as ResearchPhase
+
   const { append, remove, move, update } = useFieldArray<DmpFormValues, "dmp.dataInfo">({
     control,
     name: "dmp.dataInfo",
@@ -427,144 +949,32 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
     name: "dmp.dataInfo",
     defaultValue: [],
   }) as DmpFormValues["dmp"]["dataInfo"]
-  const [openIndex, setOpenIndex] = useState<number | null>(null)
-  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
-  const originalValuesRef = useRef<DataInfo | null>(null)
 
-  const dialogMethods = useForm<DataInfo>({
-    defaultValues: initDataInfo(),
-    mode: "onBlur",
-    reValidateMode: "onBlur",
-  })
-  const { isValid, isSubmitted } = useFormState({
-    control: dialogMethods.control,
-  })
-
-  const personInfo = useWatch({
-    control,
-    name: "dmp.personInfo",
-  })
+  const personInfo = useWatch({ control, name: "dmp.personInfo" })
   const personNames = personInfo.map((person) => `${person.lastName} ${person.firstName}`.trim())
 
-  const handleOpen = (index: number) => {
-    if (index === dataInfos.length) {
-      const init = initDataInfo()
-      dialogMethods.reset(init)
-      originalValuesRef.current = init
-    } else {
-      const data = dataInfos[index] as DataInfo
-      dialogMethods.reset(data)
-      originalValuesRef.current = data
-    }
-    setOpenIndex(index)
-  }
+  const [openIndex, setOpenIndex] = useState<number | null>(null)
 
-  const handleClose = () => {
-    if (dialogMethods.formState.isDirty) {
-      setCancelConfirmOpen(true)
-    } else {
-      setOpenIndex(null)
-    }
-  }
+  const handleOpen = (index: number) => setOpenIndex(index)
+  const handleClose = () => setOpenIndex(null)
 
-  const handleDiscardAndClose = () => {
-    dialogMethods.reset()
-    setCancelConfirmOpen(false)
-    setOpenIndex(null)
-  }
-
-  const handleDialogSubmit = (data: DataInfo) => {
+  const handleFormSubmit = (data: DataInfo) => {
     if (openIndex === null) return
     if (openIndex === dataInfos.length) {
       append(data)
     } else {
       update(openIndex, data)
     }
-    // Use setOpenIndex directly to bypass the dirty check in handleClose,
-    // since the form was successfully submitted.
-    setOpenIndex(null)
+    handleClose()
   }
 
-  const getValue = <K extends keyof DataInfo>(key: K): DataInfo[K] => {
-    const value = dialogMethods.getValues(key)
-    if (value === undefined || value === null) {
-      return "" as DataInfo[K]
-    }
-    if (key === "dataCreator") {
-      return (personNames[(value as number) - 1] ?? "") as DataInfo[K]
-    }
-    return value
-  }
-
-  const getOptions = <K extends keyof DataInfo>(key: K): string[] => {
-    if (key === "dataCreator") {
-      return personNames
-    }
-    return formData.find((item) => item.key === key)?.options ?? []
-  }
-
-  const updateValue = <K extends keyof DataInfo>(key: K, value: DataInfo[K]) => {
-    let newValue: DataInfo[K] = value
-    if (key === "dataCreator") {
-      newValue = (personNames.indexOf(value as string) + 1) as DataInfo[K]
-    }
-    if (newValue === "") {
-      newValue = undefined as DataInfo[K]
-    }
-    dialogMethods.setValue(key, newValue as never, { shouldDirty: true })
-  }
-
-  const formatFieldValue = (key: keyof DataInfo, value: DataInfo[keyof DataInfo]): string => {
-    if (value === undefined || value === null || value === "") return "（空）"
-    if (key === "dataCreator") return personNames[(value as number) - 1] ?? "（空）"
-    if (Array.isArray(value)) return value.length === 0 ? "（空）" : (value as unknown as string[]).join(", ")
-    return String(value)
-  }
-
-  const computeDiff = (): { label: string; before: string; after: string }[] => {
-    const original = originalValuesRef.current
-    if (!original) return []
-    const current = dialogMethods.getValues()
-    return formData.flatMap(({ key, label }) => {
-      const before = formatFieldValue(key, original[key])
-      const after = formatFieldValue(key, current[key])
-      return before !== after ? [{ label, before, after }] : []
-    })
-  }
-
-  const getValidationRules = <K extends keyof DataInfo>(key: K, staticRequired: boolean, label: string) => {
-    const effectiveRequired = getEffectiveRequired(key, staticRequired)
-    if (effectiveRequired) {
-      return { required: `${label} は必須です` }
-    }
-    if (key === "plannedPublicationDate") {
-      const accessRightsValue = dialogMethods.getValues("accessRights")
-      if (accessRightsValue === "公開期間猶予") {
-        return {
-          required: "アクセス権が「公開期間猶予」の場合、公開予定日を入力してください",
-        }
-      }
-    }
-
-    return {}
-  }
-
-  // Linking Files
+  // Linking Files dialog
   const [linkedGrdmFilesIndex, setLinkedFilesIndex] = useState<number | null>(null)
+
   const handleUnlinkLinkedFile = (dataInfoIndex: number, nodeId: string) => {
     const dataInfo = dataInfos[dataInfoIndex]
     const newLinkedFiles = dataInfo.linkedGrdmFiles.filter((file) => file.nodeId !== nodeId)
-    const updatedDateInfo = { ...dataInfo, linkedGrdmFiles: newLinkedFiles }
-    update(dataInfoIndex, updatedDateInfo)
-  }
-
-  // Delete Dialog
-  const [pendingDeleteIndex, setPendingDeleteIndex] = useState<number | null>(null)
-  const confirmDelete = () => {
-    if (pendingDeleteIndex !== null) {
-      remove(pendingDeleteIndex)
-      setPendingDeleteIndex(null)
-    }
+    update(dataInfoIndex, { ...dataInfo, linkedGrdmFiles: newLinkedFiles })
   }
 
   const renderLinkedFilesContent = () => {
@@ -624,23 +1034,15 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
                       {byteSizeToHumanReadable(file.size)}
                     </TableCell>
                     <TableCell sx={{ p: "0.5rem 1rem", textAlign: "center" }}>
-                      {
-                        file.date_created ?
-                          formatDateToTimezone(file.date_created, user.timezone) :
-                          "N/A"
-                      }
+                      {file.date_created ? formatDateToTimezone(file.date_created, user.timezone) : "N/A"}
                     </TableCell>
                     <TableCell sx={{ p: "0.5rem 1rem", textAlign: "center" }}>
-                      {
-                        file.date_modified ?
-                          formatDateToTimezone(file.date_modified, user.timezone) :
-                          "N/A"
-                      }
+                      {file.date_modified ? formatDateToTimezone(file.date_modified, user.timezone) : "N/A"}
                     </TableCell>
                     <TableCell sx={{ p: "0.5rem 1rem", textAlign: "center" }}>
                       <Button
                         variant="outlined"
-                        color={"warning"}
+                        color="warning"
                         size="small"
                         onClick={() => handleUnlinkLinkedFile(linkedGrdmFilesIndex, file.nodeId)}
                         startIcon={<LinkOffOutlined />}
@@ -657,6 +1059,15 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
         </TableContainer>
       </Box>
     )
+  }
+
+  // Delete dialog
+  const [pendingDeleteIndex, setPendingDeleteIndex] = useState<number | null>(null)
+  const confirmDelete = () => {
+    if (pendingDeleteIndex !== null) {
+      remove(pendingDeleteIndex)
+      setPendingDeleteIndex(null)
+    }
   }
 
   return (
@@ -682,56 +1093,91 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
           </TableHead>
           <TableBody>
             {dataInfos.map((dataInfo, index) => (
-              <TableRow key={index}>
-                <TableCell children={dataInfo.dataName} sx={{ p: "0.5rem 1rem" }} />
-                <TableCell children={dataInfo.researchField} sx={{ p: "0.5rem 1rem" }} />
-                <TableCell children={dataInfo.dataType} sx={{ p: "0.5rem 1rem" }} />
-                <TableCell sx={{ p: "0.5rem 1rem" }} align="right">
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    children={"関連ファイル"}
-                    startIcon={<AddLinkOutlined />}
-                    onClick={() => setLinkedFilesIndex(index)}
-                    sx={{ textTransform: "none" }}
-                  />
-                </TableCell>
-                <TableCell sx={{ display: "flex", flexDirection: "row", gap: "1rem", p: "0.5rem 1rem", justifyContent: "flex-end" }} align="right">
-                  <Button
-                    variant="outlined"
-                    color="info"
-                    children={"Up"}
-                    startIcon={<ArrowUpwardOutlined />}
-                    onClick={() => move(index, index - 1)}
-                    sx={{ textTransform: "none" }}
-                    disabled={index === 0}
-                  />
-                  <Button
-                    variant="outlined"
-                    color="info"
-                    children={"Down"}
-                    startIcon={<ArrowDownwardOutlined />}
-                    onClick={() => move(index, index + 1)}
-                    sx={{ textTransform: "none" }}
-                    disabled={index === dataInfos.length - 1}
-                  />
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    children={"編集"}
-                    startIcon={<EditOutlined />}
-                    onClick={() => handleOpen(index)}
-                  />
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    children={"削除"}
-                    startIcon={<DeleteOutline />}
-                    onClick={() => setPendingDeleteIndex(index)}
-                  />
-                </TableCell>
-              </TableRow>
+              <React.Fragment key={index}>
+                {/* Data row */}
+                <TableRow>
+                  <TableCell children={dataInfo.dataName} sx={{ p: "0.5rem 1rem" }} />
+                  <TableCell children={dataInfo.researchField} sx={{ p: "0.5rem 1rem" }} />
+                  <TableCell children={dataInfo.dataType} sx={{ p: "0.5rem 1rem" }} />
+                  <TableCell sx={{ p: "0.5rem 1rem" }} align="right">
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      children={"関連ファイル"}
+                      startIcon={<AddLinkOutlined />}
+                      onClick={() => setLinkedFilesIndex(index)}
+                      sx={{ textTransform: "none" }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ display: "flex", flexDirection: "row", gap: "0.5rem", p: "0.5rem 1rem", justifyContent: "flex-end" }} align="right">
+                    <Button
+                      variant="outlined"
+                      color="info"
+                      children={"Up"}
+                      startIcon={<ArrowUpwardOutlined />}
+                      onClick={() => move(index, index - 1)}
+                      sx={{ textTransform: "none" }}
+                      disabled={index === 0}
+                    />
+                    <Button
+                      variant="outlined"
+                      color="info"
+                      children={"Down"}
+                      startIcon={<ArrowDownwardOutlined />}
+                      onClick={() => move(index, index + 1)}
+                      sx={{ textTransform: "none" }}
+                      disabled={index === dataInfos.length - 1}
+                    />
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      children={openIndex === index ? "閉じる" : "編集"}
+                      startIcon={openIndex === index ? <ExpandLessOutlined /> : <EditOutlined />}
+                      onClick={() => openIndex === index ? handleClose() : handleOpen(index)}
+                    />
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      children={"削除"}
+                      startIcon={<DeleteOutline />}
+                      onClick={() => setPendingDeleteIndex(index)}
+                    />
+                  </TableCell>
+                </TableRow>
+                {/* Accordion row */}
+                <TableRow key={`accordion-${index}`}>
+                  <TableCell colSpan={5} sx={{ p: 0, border: openIndex === index ? undefined : "none" }}>
+                    <Collapse in={openIndex === index} unmountOnExit>
+                      <DataInfoForm
+                        key={`form-${index}-${openIndex}`}
+                        index={index}
+                        totalCount={dataInfos.length}
+                        onSubmit={handleFormSubmit}
+                        onClose={handleClose}
+                        researchPhase={researchPhase}
+                        personNames={personNames}
+                      />
+                    </Collapse>
+                  </TableCell>
+                </TableRow>
+              </React.Fragment>
             ))}
+            {/* Add new data info accordion row */}
+            <TableRow key="accordion-new">
+              <TableCell colSpan={5} sx={{ p: 0, border: openIndex === dataInfos.length ? undefined : "none" }}>
+                <Collapse in={openIndex === dataInfos.length} unmountOnExit>
+                  <DataInfoForm
+                    key={`form-new-${openIndex}`}
+                    index={dataInfos.length}
+                    totalCount={dataInfos.length}
+                    onSubmit={handleFormSubmit}
+                    onClose={handleClose}
+                    researchPhase={researchPhase}
+                    personNames={personNames}
+                  />
+                </Collapse>
+              </TableCell>
+            </TableRow>
           </TableBody>
         </Table>
       </TableContainer>
@@ -739,11 +1185,13 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
       <Button
         variant="outlined"
         color="primary"
-        onClick={() => handleOpen(dataInfos.length)} sx={{ width: "180px", mt: "1rem" }}
+        onClick={() => handleOpen(dataInfos.length)}
+        sx={{ width: "180px", mt: "1rem" }}
         children="データを追加する"
         startIcon={<AddOutlined />}
       />
 
+      {/* Related GRDM files dialog */}
       <Dialog
         open={linkedGrdmFilesIndex !== null}
         onClose={() => setLinkedFilesIndex(null)}
@@ -767,6 +1215,7 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
         </DialogActions>
       </Dialog>
 
+      {/* Delete confirmation dialog */}
       <Dialog
         open={pendingDeleteIndex !== null}
         onClose={() => setPendingDeleteIndex(null)}
@@ -778,11 +1227,9 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
           {"この研究データ情報を削除しますか？"}
         </DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: "1rem", mt: "0.5rem", mx: "1rem" }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            <Typography>
-              {"研究データ情報を削除すると、GRDM File との関連付けも解除されます。"}
-            </Typography>
-          </Box>
+          <Typography>
+            {"研究データ情報を削除すると、GRDM File との関連付けも解除されます。"}
+          </Typography>
         </DialogContent>
         <DialogActions sx={{ m: "0.5rem 1.5rem 1.5rem" }}>
           <Button
@@ -796,169 +1243,6 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
             color="secondary"
             onClick={() => setPendingDeleteIndex(null)}
             children="キャンセル"
-          />
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
-        open={openIndex !== null}
-        onClose={handleClose}
-        fullWidth
-        maxWidth="sm"
-        closeAfterTransition={false}
-      >
-        <FormProvider {...dialogMethods}>
-          <DialogTitle
-            children={openIndex === dataInfos.length ? "管理対象データの追加" : "管理対象データの編集"}
-            sx={{ mt: "0.5rem", mx: "1rem" }}
-          />
-          <DialogContent sx={{ display: "flex", flexDirection: "column", gap: "1rem", mt: "0.5rem", mx: "1rem" }}>
-            {openIndex !== null && formData.map(({ key, label, required: staticRequired, helperText, placeholder, type, selectMultiple, helpChip, minRows }) => {
-              const effectiveRequired = getEffectiveRequired(key, staticRequired)
-              // Render the data management agency field with ROR API autocomplete
-              if (key === "dataManagementAgency") {
-                return (
-                  <DataManagementAgencyField
-                    key={key}
-                    label={label}
-                    required={effectiveRequired}
-                    helpChip={helpChip}
-                  />
-                )
-              }
-              return (
-                <Controller
-                  key={key}
-                  name={key}
-                  control={dialogMethods.control}
-                  rules={getValidationRules(key, staticRequired, label)}
-                  render={({ field, fieldState: { error } }) => (
-                    <FormControl fullWidth>
-                      <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-                        <OurFormLabel label={label} required={effectiveRequired} />
-                        {helpChip && <HelpChip text={helpChip} />}
-                      </Box>
-                      {!selectMultiple ? (
-                        <TextField
-                          {...field}
-                          fullWidth
-                          variant="outlined"
-                          error={!!error}
-                          helperText={error?.message ?? helperText}
-                          placeholder={placeholder}
-                          value={getValue(key)}
-                          onChange={(e) => updateValue(key, e.target.value)}
-                          type={type === "date" ? "date" : "text"}
-                          select={type === "select"}
-                          size="small"
-                          multiline={minRows !== undefined && minRows > 1}
-                          minRows={minRows}
-                        >
-                          {type === "select" &&
-                            getOptions(key).map((option) => (
-                              <MenuItem key={option} value={option} children={option} />
-                            ))}
-                        </TextField>
-                      ) : (
-                        <>
-                          <Select
-                            {...field}
-                            value={field.value ?? []}
-                            fullWidth
-                            variant="outlined"
-                            error={!!error}
-                            multiple
-                            size="small"
-                            renderValue={(selected) => (
-                              <Box sx={{ display: "flex", flexDirection: "row", gap: "0.5rem" }}>
-                                {(selected as unknown as string[]).map((value) => (
-                                  <Chip key={value} label={value} />
-                                ))}
-                              </Box>
-                            )}
-                          >
-                            {getOptions(key).map((option) => (
-                              <MenuItem key={option} value={option} children={option} />
-                            ))}
-                          </Select>
-                          <FormHelperText error={!!error} children={error?.message ?? helperText} />
-                        </>
-                      )}
-                    </FormControl>
-                  )}
-                />
-              )
-            })}
-          </DialogContent>
-          <DialogActions sx={{ m: "0.5rem 1.5rem 1.5rem" }}>
-            <Button
-              type="submit"
-              children={openIndex === dataInfos.length ? "追加" : "更新"}
-              variant="contained"
-              color="secondary"
-              disabled={isSubmitted && !isValid}
-              onClick={dialogMethods.handleSubmit(handleDialogSubmit)}
-            />
-            <Button children="キャンセル" onClick={handleClose} variant="outlined" color="secondary" />
-          </DialogActions>
-        </FormProvider>
-      </Dialog>
-
-      <Dialog
-        open={cancelConfirmOpen}
-        onClose={() => setCancelConfirmOpen(false)}
-        fullWidth
-        maxWidth="md"
-        closeAfterTransition={false}
-      >
-        <DialogTitle sx={{ mt: "0.5rem", mx: "1rem" }}>
-          {"編集中の内容を破棄しますか？"}
-        </DialogTitle>
-        <DialogContent sx={{ mx: "1rem" }}>
-          {(() => {
-            const diff = computeDiff()
-            if (diff.length === 0) {
-              return <Typography>{"入力中の内容は保存されません。"}</Typography>
-            }
-            return (
-              <>
-                <Typography sx={{ mb: "1rem" }}>{"以下の変更内容が破棄されます："}</Typography>
-                <TableContainer component={Paper} variant="outlined" sx={{ borderBottom: "none" }}>
-                  <Table size="small">
-                    <TableHead sx={{ backgroundColor: colors.grey[100] }}>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: "bold", width: "30%" }}>{"項目"}</TableCell>
-                        <TableCell sx={{ fontWeight: "bold", width: "35%" }}>{"変更前"}</TableCell>
-                        <TableCell sx={{ fontWeight: "bold", width: "35%" }}>{"変更後"}</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {diff.map(({ label, before, after }) => (
-                        <TableRow key={label}>
-                          <TableCell sx={{ verticalAlign: "top" }}>{label}</TableCell>
-                          <TableCell sx={{ verticalAlign: "top", color: "text.secondary", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{before}</TableCell>
-                          <TableCell sx={{ verticalAlign: "top", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{after}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </>
-            )
-          })()}
-        </DialogContent>
-        <DialogActions sx={{ m: "0.5rem 1.5rem 1.5rem" }}>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleDiscardAndClose}
-            children="破棄して閉じる"
-          />
-          <Button
-            variant="outlined"
-            color="secondary"
-            onClick={() => setCancelConfirmOpen(false)}
-            children="編集を続ける"
           />
         </DialogActions>
       </Dialog>
