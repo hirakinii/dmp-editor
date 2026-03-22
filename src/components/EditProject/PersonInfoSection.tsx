@@ -11,7 +11,7 @@ import {
   TableCell, TableContainer, TableHead, TableRow, TextField, Typography, colors,
 } from "@mui/material"
 import { SxProps } from "@mui/system"
-import { useState } from "react"
+import React, { useState } from "react"
 import {
   Controller, FormProvider, useFieldArray, useForm, useFormContext, useFormState, useWatch,
 } from "react-hook-form"
@@ -474,9 +474,9 @@ export default function PersonInfoSection({ sx }: PersonInfoSectionProps) {
           </TableHead>
           <TableBody>
             {personInfos.map((personInfo, index) => (
-              <>
+              <React.Fragment key={index}>
                 {/* Data row */}
-                <TableRow key={`row-${index}`}>
+                <TableRow>
                   <TableCell sx={{ p: "0.5rem 1rem" }}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                       {personInfo.role.join(", ")}
@@ -562,7 +562,7 @@ export default function PersonInfoSection({ sx }: PersonInfoSectionProps) {
                     </Collapse>
                   </TableCell>
                 </TableRow>
-              </>
+              </React.Fragment>
             ))}
             {/* Add new person accordion row */}
             <TableRow key="accordion-new">
