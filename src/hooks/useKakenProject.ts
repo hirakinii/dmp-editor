@@ -1,8 +1,60 @@
 import { KakenApiClient } from "@hirakinii-packages/kaken-api-client-typescript"
-import type { Project } from "@hirakinii-packages/kaken-api-client-typescript"
+import type { Project, ResearcherRole } from "@hirakinii-packages/kaken-api-client-typescript"
 import { useQuery } from "@tanstack/react-query"
 
-import type { ProjectInfo } from "@/dmp"
+import type { PersonInfo, ProjectInfo } from "@/dmp"
+import { personRole } from "@/dmp"
+
+/** Result returned by useKakenProject on success. */
+export interface KakenSearchResult {
+  projectInfo: ProjectInfo
+  personInfos: PersonInfo[]
+}
+
+/** Maps KAKEN role strings to DMP person roles. */
+const KAKEN_ROLE_MAP: Partial<Record<string, typeof personRole[number]>> = {
+  principal_investigator: "研究代表者",
+  co_investigator_buntan: "研究分担者",
+}
+
+/**
+ * Maps an array of KAKEN ResearcherRole objects to DMP PersonInfo objects.
+ * Members with unrecognized roles are skipped.
+ * All mapped fields are tagged with source = "kaken".
+ *
+ * @param members - ResearcherRole array from a KAKEN Project
+ * @returns PersonInfo array containing only recognized roles
+ */
+export function kakenMembersToPersonInfos(members: ResearcherRole[]): PersonInfo[] {
+  const results: PersonInfo[] = []
+  for (const member of members) {
+    const dmpRole = KAKEN_ROLE_MAP[member.role]
+    if (!dmpRole) continue
+
+    const lastName = member.name?.familyName ?? ""
+    const firstName = member.name?.givenName ?? ""
+    const affiliation = member.affiliations?.[0]?.institution?.name ?? ""
+
+    results.push({
+      role: [dmpRole],
+      lastName,
+      firstName,
+      eRadResearcherId: member.eradCode ?? undefined,
+      orcid: undefined,
+      affiliation,
+      contact: undefined,
+      grdmUserId: undefined,
+      source: {
+        role: "kaken",
+        lastName: "kaken",
+        firstName: "kaken",
+        eRadResearcherId: member.eradCode ? "kaken" : undefined,
+        affiliation: affiliation ? "kaken" : undefined,
+      },
+    })
+  }
+  return results
+}
 
 /**
  * Maps a KAKEN API Project object to a DMP ProjectInfo object.
@@ -60,7 +112,7 @@ const kakenProxyFetch = (url: string): Promise<Response> =>
  * @param kakenNumber - KAKEN project number (e.g. "23K12345")
  */
 export function useKakenProject(kakenNumber: string) {
-  return useQuery<ProjectInfo | null, Error>({
+  return useQuery<KakenSearchResult | null, Error>({
     queryKey: ["kakenProject", kakenNumber],
     queryFn: async () => {
       const client = new KakenApiClient({
@@ -71,7 +123,10 @@ export function useKakenProject(kakenNumber: string) {
       const response = await client.projects.search({ projectNumber: kakenNumber })
       const project = response.projects[0]
       if (!project) return null
-      return kakenProjectToDmpProjectInfo(project)
+      return {
+        projectInfo: kakenProjectToDmpProjectInfo(project),
+        personInfos: kakenMembersToPersonInfos(project.members ?? []),
+      }
     },
     enabled: false,
   })
