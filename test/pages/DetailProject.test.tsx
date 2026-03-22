@@ -1,6 +1,7 @@
 import { ThemeProvider } from "@mui/material/styles"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { RecoilRoot } from "recoil"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -11,8 +12,10 @@ import { theme } from "../../src/theme"
 
 // --- Mocks ---
 
-const { mockUseDmp } = vi.hoisted(() => ({
+const { mockUseDmp, mockShowBoundary, mockExportToJspsExcel } = vi.hoisted(() => ({
   mockUseDmp: vi.fn(),
+  mockShowBoundary: vi.fn(),
+  mockExportToJspsExcel: vi.fn(),
 }))
 
 vi.mock("@/hooks/useDmp", () => ({
@@ -24,12 +27,25 @@ vi.mock("@/components/Frame", () => ({
   default: ({ children }: { children: React.ReactNode }) => <div data-testid="frame">{children}</div>,
 }))
 
-vi.mock("@/components/EditProject/ExportDmpCard", () => ({
-  default: ({ projectName }: { projectName: string }) => (
-    <div data-testid="export-dmp-card" data-project-name={projectName}>
-      ExportDmpCard
-    </div>
-  ),
+vi.mock("react-error-boundary", async (importOriginal) => {
+  const original = await importOriginal<typeof import("react-error-boundary")>()
+  return {
+    ...original,
+    useErrorBoundary: () => ({ showBoundary: mockShowBoundary }),
+  }
+})
+
+vi.mock("@/jspsExport", () => ({
+  exportToJspsExcel: mockExportToJspsExcel,
+}))
+
+vi.mock("@/config", () => ({
+  GRDM_CONFIG: {
+    BASE_URL: "https://rdm.nii.ac.jp",
+    API_BASE_URL: "https://api.rdm.nii.ac.jp/v2",
+    TOKEN_SETTINGS_URL: "https://rdm.nii.ac.jp/settings/tokens",
+    SUPPORT_URL: "https://support.rdm.nii.ac.jp/usermanual/Setting-06/",
+  },
 }))
 
 // --- Test data ---
@@ -107,6 +123,12 @@ function renderDetailProject(projectId = "proj-001") {
 describe("DetailProject", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubGlobal("URL", {
+      createObjectURL: vi.fn(() => "blob:mock-url"),
+      revokeObjectURL: vi.fn(),
+    })
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockReturnValue(undefined)
+    mockExportToJspsExcel.mockResolvedValue(new Blob(["test"]))
   })
 
   describe("Loading state", () => {
@@ -122,9 +144,9 @@ describe("DetailProject", () => {
       mockUseDmp.mockReturnValue({ isLoading: false, data: mockDmp, error: null })
     })
 
-    it("renders the page heading", () => {
+    it("renders the page heading with project name", () => {
       renderDetailProject()
-      expect(screen.getByText("DMP Project の詳細")).toBeInTheDocument()
+      expect(screen.getByText("DMP「テスト研究プロジェクト」")).toBeInTheDocument()
     })
 
     it("displays DMP creation date", () => {
@@ -164,11 +186,95 @@ describe("DetailProject", () => {
       expect(editLink).toHaveAttribute("href", "/projects/proj-001")
     })
 
-    it("renders ExportDmpCard with the project name", () => {
+    it("renders the export button", () => {
       renderDetailProject()
-      const card = screen.getByTestId("export-dmp-card")
-      expect(card).toBeInTheDocument()
-      expect(card).toHaveAttribute("data-project-name", "テスト研究プロジェクト")
+      expect(screen.getByRole("button", { name: /出力/ })).toBeInTheDocument()
+    })
+
+    it("does not render the DMP output card section", () => {
+      renderDetailProject()
+      expect(screen.queryByText("DMP の出力")).not.toBeInTheDocument()
+    })
+
+    it("renders the GRDM icon link with correct href", () => {
+      renderDetailProject("proj-001")
+      const grdmLink = screen.getByRole("link", { name: /GRDM/i })
+      expect(grdmLink).toBeInTheDocument()
+      expect(grdmLink).toHaveAttribute("href", "https://rdm.nii.ac.jp/proj-001")
+    })
+
+    it("GRDM link opens in a new tab", () => {
+      renderDetailProject("proj-001")
+      const grdmLink = screen.getByRole("link", { name: /GRDM/i })
+      expect(grdmLink).toHaveAttribute("target", "_blank")
+      expect(grdmLink).toHaveAttribute("rel", "noopener noreferrer")
+    })
+  })
+
+  describe("Export button behavior", () => {
+    beforeEach(() => {
+      mockUseDmp.mockReturnValue({ isLoading: false, data: mockDmp, error: null })
+    })
+
+    it("calls exportToJspsExcel with dmp on button click", async () => {
+      const user = userEvent.setup()
+      renderDetailProject()
+
+      await user.click(screen.getByRole("button", { name: /出力/ }))
+
+      await waitFor(() => {
+        expect(mockExportToJspsExcel).toHaveBeenCalledWith(mockDmp)
+      })
+    })
+
+    it("downloads file with correct filename", async () => {
+      let capturedDownload: string | null = null
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+        capturedDownload = this.download
+      })
+
+      const user = userEvent.setup()
+      renderDetailProject()
+
+      await user.click(screen.getByRole("button", { name: /出力/ }))
+
+      await waitFor(() => {
+        expect(capturedDownload).toBe("dmp-jsps-テスト研究プロジェクト.xlsx")
+      })
+    })
+
+    it("shows loading state during download", async () => {
+      let resolveExport!: (blob: Blob) => void
+      mockExportToJspsExcel.mockReturnValue(
+        new Promise<Blob>((resolve) => { resolveExport = resolve }),
+      )
+
+      const user = userEvent.setup()
+      renderDetailProject()
+
+      await user.click(screen.getByRole("button", { name: /出力/ }))
+
+      expect(screen.getByText("出力中...")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /出力中/ })).toBeDisabled()
+
+      resolveExport(new Blob(["test"]))
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /出力/ })).not.toBeDisabled()
+      })
+    })
+
+    it("calls showBoundary when export throws", async () => {
+      const error = new Error("Export failed")
+      mockExportToJspsExcel.mockRejectedValue(error)
+
+      const user = userEvent.setup()
+      renderDetailProject()
+
+      await user.click(screen.getByRole("button", { name: /出力/ }))
+
+      await waitFor(() => {
+        expect(mockShowBoundary).toHaveBeenCalledWith(error)
+      })
     })
   })
 })
