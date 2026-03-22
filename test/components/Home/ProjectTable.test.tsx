@@ -14,11 +14,10 @@ import { theme } from "../../../src/theme"
 
 // --- Mocks (hoisted to allow use in vi.mock factories) ---
 
-const { mockShowSnackbar, mockReadDmpFile, mockExportToJspsExcel, mockExportToExcel } = vi.hoisted(() => ({
+const { mockShowSnackbar, mockReadDmpFile, mockExportToJspsExcel } = vi.hoisted(() => ({
   mockShowSnackbar: vi.fn(),
   mockReadDmpFile: vi.fn(),
   mockExportToJspsExcel: vi.fn(),
-  mockExportToExcel: vi.fn(),
 }))
 
 vi.mock("@/hooks/useSnackbar", async (importOriginal) => {
@@ -39,10 +38,6 @@ vi.mock("@/grdmClient", async (importOriginal) => {
 
 vi.mock("@/jspsExport", () => ({
   exportToJspsExcel: mockExportToJspsExcel,
-}))
-
-vi.mock("@/excelExport", () => ({
-  exportToExcel: mockExportToExcel,
 }))
 
 // --- Test data ---
@@ -119,53 +114,30 @@ describe("ProjectTable", () => {
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {})
   })
 
-  describe("Export button rendering", () => {
-    it("renders an Export button for each project row", () => {
+  describe("出力 button rendering", () => {
+    it("renders an 出力 button for each project row", () => {
       renderWithProviders(<ProjectTable user={mockUser} projects={mockProjects} />)
-      const exportButtons = screen.getAllByRole("button", { name: /Export/ })
+      const exportButtons = screen.getAllByRole("button", { name: /出力/ })
       expect(exportButtons).toHaveLength(mockProjects.length)
     })
 
-    it("renders both the edit button and export button in the same row", () => {
+    it("renders both the edit button and 出力 button in the same row", () => {
       renderWithProviders(<ProjectTable user={mockUser} projects={mockProjects} />)
       const editButtons = screen.getAllByRole("button", { name: /編集/ })
-      const exportButtons = screen.getAllByRole("button", { name: /Export/ })
+      const exportButtons = screen.getAllByRole("button", { name: /出力/ })
       expect(editButtons).toHaveLength(mockProjects.length)
       expect(exportButtons).toHaveLength(mockProjects.length)
     })
-  })
 
-  describe("Export menu", () => {
-    it("shows export format menu when Export button is clicked", async () => {
-      const user = userEvent.setup()
+    it("does not render a dropdown menu", () => {
       renderWithProviders(<ProjectTable user={mockUser} projects={mockProjects} />)
-
-      const exportButtons = screen.getAllByRole("button", { name: /Export/ })
-      await user.click(exportButtons[0])
-
-      expect(screen.getByText("サンプル形式")).toBeInTheDocument()
-      expect(screen.getByText("JSPS 形式")).toBeInTheDocument()
-    })
-
-    it("hides menu after selecting an item", async () => {
-      const user = userEvent.setup()
-      mockReadDmpFile.mockResolvedValue({ dmp: mockDmp, node: {} })
-      mockExportToJspsExcel.mockResolvedValue(new Blob(["test"], { type: "application/zip" }))
-
-      renderWithProviders(<ProjectTable user={mockUser} projects={mockProjects} />)
-
-      const exportButtons = screen.getAllByRole("button", { name: /Export/ })
-      await user.click(exportButtons[0])
-      await user.click(screen.getByText("JSPS 形式"))
-
-      await waitFor(() => {
-        expect(screen.queryByText("JSPS 形式")).not.toBeInTheDocument()
-      })
+      expect(screen.queryByText("サンプル形式")).not.toBeInTheDocument()
+      expect(screen.queryByText("JSPS 形式")).not.toBeInTheDocument()
     })
   })
 
   describe("JSPS export", () => {
-    it("calls readDmpFile and exportToJspsExcel when JSPS format is selected", async () => {
+    it("calls readDmpFile and exportToJspsExcel when 出力 button is clicked", async () => {
       const user = userEvent.setup()
       const mockBlob = new Blob(["test"], { type: "application/zip" })
       mockReadDmpFile.mockResolvedValue({ dmp: mockDmp, node: {} })
@@ -173,9 +145,8 @@ describe("ProjectTable", () => {
 
       renderWithProviders(<ProjectTable user={mockUser} projects={mockProjects} />)
 
-      const exportButtons = screen.getAllByRole("button", { name: /Export/ })
+      const exportButtons = screen.getAllByRole("button", { name: /出力/ })
       await user.click(exportButtons[0])
-      await user.click(screen.getByText("JSPS 形式"))
 
       await waitFor(() => {
         expect(mockReadDmpFile).toHaveBeenCalledWith(expect.any(String), "project-001")
@@ -184,27 +155,7 @@ describe("ProjectTable", () => {
     })
   })
 
-  describe("Sample export", () => {
-    it("calls readDmpFile and exportToExcel when sample format is selected", async () => {
-      const user = userEvent.setup()
-      const mockBlob = new Blob(["test"], { type: "application/vnd.ms-excel" })
-      mockReadDmpFile.mockResolvedValue({ dmp: mockDmp, node: {} })
-      mockExportToExcel.mockReturnValue(mockBlob)
-
-      renderWithProviders(<ProjectTable user={mockUser} projects={mockProjects} />)
-
-      const exportButtons = screen.getAllByRole("button", { name: /Export/ })
-      await user.click(exportButtons[0])
-      await user.click(screen.getByText("サンプル形式"))
-
-      await waitFor(() => {
-        expect(mockReadDmpFile).toHaveBeenCalledWith(expect.any(String), "project-001")
-        expect(mockExportToExcel).toHaveBeenCalledWith(mockDmp)
-      })
-    })
-  })
-
-  describe("Filename for download (Bug 1)", () => {
+  describe("Filename for download", () => {
     it("uses dmp-jsps-<project.title>.xlsx for JSPS format", async () => {
       const user = userEvent.setup()
       const mockBlob = new Blob(["test"], { type: "application/zip" })
@@ -218,34 +169,11 @@ describe("ProjectTable", () => {
 
       renderWithProviders(<ProjectTable user={mockUser} projects={mockProjects} />)
 
-      const exportButtons = screen.getAllByRole("button", { name: /Export/ })
+      const exportButtons = screen.getAllByRole("button", { name: /出力/ })
       await user.click(exportButtons[0])
-      await user.click(screen.getByText("JSPS 形式"))
 
       await waitFor(() => {
         expect(capturedFilename).toBe("dmp-jsps-DMP-Test Project 1.xlsx")
-      })
-    })
-
-    it("uses dmp-sample-<project.title>.xlsx for sample format", async () => {
-      const user = userEvent.setup()
-      const mockBlob = new Blob(["test"], { type: "application/vnd.ms-excel" })
-      mockReadDmpFile.mockResolvedValue({ dmp: mockDmp, node: {} })
-      mockExportToExcel.mockResolvedValue(mockBlob)
-
-      let capturedFilename: string | null = null
-      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
-        capturedFilename = this.download
-      })
-
-      renderWithProviders(<ProjectTable user={mockUser} projects={mockProjects} />)
-
-      const exportButtons = screen.getAllByRole("button", { name: /Export/ })
-      await user.click(exportButtons[0])
-      await user.click(screen.getByText("サンプル形式"))
-
-      await waitFor(() => {
-        expect(capturedFilename).toBe("dmp-sample-DMP-Test Project 1.xlsx")
       })
     })
   })
@@ -257,9 +185,8 @@ describe("ProjectTable", () => {
 
       renderWithProviders(<ProjectTable user={mockUser} projects={mockProjects} />)
 
-      const exportButtons = screen.getAllByRole("button", { name: /Export/ })
+      const exportButtons = screen.getAllByRole("button", { name: /出力/ })
       await user.click(exportButtons[0])
-      await user.click(screen.getByText("JSPS 形式"))
 
       await waitFor(() => {
         expect(mockShowSnackbar).toHaveBeenCalledWith(
@@ -269,7 +196,7 @@ describe("ProjectTable", () => {
       })
     })
 
-    it("shows 'DMP not found' snackbar when DMP file does not exist", async () => {
+    it("shows error snackbar when DMP file does not exist", async () => {
       const user = userEvent.setup()
       mockReadDmpFile.mockRejectedValue(
         Object.assign(new Error("Failed to read DMP file"), {
@@ -279,9 +206,8 @@ describe("ProjectTable", () => {
 
       renderWithProviders(<ProjectTable user={mockUser} projects={mockProjects} />)
 
-      const exportButtons = screen.getAllByRole("button", { name: /Export/ })
+      const exportButtons = screen.getAllByRole("button", { name: /出力/ })
       await user.click(exportButtons[0])
-      await user.click(screen.getByText("JSPS 形式"))
 
       await waitFor(() => {
         expect(mockShowSnackbar).toHaveBeenCalledWith(

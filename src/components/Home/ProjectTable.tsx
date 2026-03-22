@@ -1,14 +1,11 @@
 import DownloadingOutlined from "@mui/icons-material/DownloadingOutlined"
 import EditOutlined from "@mui/icons-material/EditOutlined"
 import InfoOutlined from "@mui/icons-material/InfoOutlined"
-import OpenInNew from "@mui/icons-material/OpenInNew"
 import {
   Box,
   Button,
   CircularProgress,
-  Link,
-  Menu,
-  MenuItem,
+  IconButton,
   Paper,
   Table,
   TableBody,
@@ -16,16 +13,17 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
   colors,
 } from "@mui/material"
 import { SxProps } from "@mui/system"
-import { MouseEvent, useState } from "react"
+import { useState } from "react"
 import { useNavigate } from "react-router"
 import { useRecoilValue } from "recoil"
 
+import grdmLogoMark from "@/assets/grdm_logo_mark.png"
 import OurCard from "@/components/OurCard"
-import { exportToExcel } from "@/excelExport"
 import { DMP_PROJECT_PREFIX, ProjectInfo, formatDateToTimezone, readDmpFile } from "@/grdmClient"
 import { useSnackbar } from "@/hooks/useSnackbar"
 import { User } from "@/hooks/useUser"
@@ -66,7 +64,9 @@ function ProjectTableHeader() {
         <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "15%" }}>
           {"最終更新日"}
         </TableCell>
-        <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "35%" }} />
+        <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "35%" }}>
+          {"操作"}
+        </TableCell>
       </TableRow>
     </TableHead>
   )
@@ -79,29 +79,14 @@ function ProjectTableRow({ project, user }: { project: ProjectInfo; user: User }
   const navigate = useNavigate()
   const token = useRecoilValue(tokenAtom)
   const { showSnackbar } = useSnackbar()
-  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
   const [isExporting, setIsExporting] = useState(false)
 
-  const handleExportClick = (event: MouseEvent<HTMLButtonElement>) => {
-    setMenuAnchor(event.currentTarget)
-  }
-
-  const handleMenuClose = () => {
-    setMenuAnchor(null)
-  }
-
-  const handleExport = async (format: "jsps" | "sample") => {
-    handleMenuClose()
+  const handleExport = async () => {
     setIsExporting(true)
     try {
       const { dmp } = await readDmpFile(token, project.id)
-      if (format === "jsps") {
-        const blob = await exportToJspsExcel(dmp)
-        triggerDownload(blob, `dmp-jsps-${project.title}.xlsx`)
-      } else {
-        const blob = await exportToExcel(dmp)
-        triggerDownload(blob, `dmp-sample-${project.title}.xlsx`)
-      }
+      const blob = await exportToJspsExcel(dmp)
+      triggerDownload(blob, `dmp-jsps-${project.title}.xlsx`)
     } catch {
       showSnackbar("エクスポートに失敗しました", "error")
     } finally {
@@ -112,15 +97,7 @@ function ProjectTableRow({ project, user }: { project: ProjectInfo; user: User }
   return (
     <TableRow key={project.id}>
       <TableCell sx={{ textAlign: "left", p: "0.5rem 1rem", width: "35%" }}>
-        <Link
-          href={project.html}
-          target="_blank"
-          rel="noopener noreferrer"
-          sx={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}
-        >
-          {project.title}
-          <OpenInNew sx={{ fontSize: "1rem" }} />
-        </Link>
+        {project.title}
       </TableCell>
       <TableCell sx={{ textAlign: "center", p: "0.5rem 1rem", width: "15%" }}>
         {formatDateToTimezone(project.dateCreated, user.timezone)}
@@ -152,18 +129,25 @@ function ProjectTableRow({ project, user }: { project: ProjectInfo; user: User }
             variant="outlined"
             color="secondary"
             size="small"
-            onClick={handleExportClick}
+            onClick={handleExport}
             startIcon={isExporting ? <CircularProgress size={14} color="inherit" /> : <DownloadingOutlined />}
             disabled={isExporting}
-            aria-label="Export"
+            aria-label="出力"
           >
-            {"Export"}
-            {"\u25BC"}
+            {"出力"}
           </Button>
-          <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={handleMenuClose}>
-            <MenuItem onClick={() => handleExport("sample")}>{"サンプル形式"}</MenuItem>
-            <MenuItem onClick={() => handleExport("jsps")}>{"JSPS 形式"}</MenuItem>
-          </Menu>
+          <Tooltip title="GRDM プロジェクトを開く">
+            <IconButton
+              component="a"
+              href={project.html}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="GRDM"
+              size="small"
+            >
+              <Box component="img" src={grdmLogoMark} alt="GRDM" sx={{ width: 24, height: 24 }} />
+            </IconButton>
+          </Tooltip>
         </Box>
       </TableCell>
     </TableRow>
