@@ -39,7 +39,6 @@ function DataInfoSectionWrapper({ researchPhase }: { researchPhase: ResearchPhas
   const dmp = initDmp(null)
   const methods = useForm<DmpFormValues>({
     defaultValues: {
-      grdmProjectName: "",
       dmp: {
         ...dmp,
         metadata: {

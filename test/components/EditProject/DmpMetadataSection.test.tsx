@@ -25,7 +25,6 @@ function TestWrapper({ isNew = false, metadata }: WrapperProps) {
   const dmp = initDmp()
   const methods = useForm<DmpFormValues>({
     defaultValues: {
-      grdmProjectName: "",
       dmp: { ...dmp, metadata: { ...dmp.metadata, ...metadata } },
     },
     mode: "onBlur",

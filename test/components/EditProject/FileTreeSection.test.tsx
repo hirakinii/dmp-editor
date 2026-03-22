@@ -51,7 +51,6 @@ function FileTreeSectionWrapper({
 }) {
   const methods = useForm<DmpFormValues>({
     defaultValues: {
-      grdmProjectName: "",
       dmp: {
         metadata: {
           revisionType: "新規",

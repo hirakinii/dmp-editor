@@ -56,7 +56,6 @@ export default function EditProject({ isNew = false }: EditProjectProps) {
 
   const methods = useForm<DmpFormValues>({
     defaultValues: {
-      grdmProjectName: "",
       dmp: initDmp(userQuery.data),
     },
     mode: "onBlur",
@@ -70,14 +69,12 @@ export default function EditProject({ isNew = false }: EditProjectProps) {
       // which would overwrite user-entered form values like grdmProjectName.
       if (!formInitialized && userQuery.data && projectsQuery.data) {
         methods.reset({
-          grdmProjectName: "",
           dmp: initDmp(userQuery.data),
         })
         setFormInitialized(true)
       }
     } else if (dmpQuery.data && userQuery.data && projectQuery.data) {
       methods.reset({
-        grdmProjectName: projectQuery.data.title ?? "",
         dmp: dmpQuery.data,
       })
     }

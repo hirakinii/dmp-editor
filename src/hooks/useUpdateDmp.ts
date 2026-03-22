@@ -23,7 +23,7 @@ export function useUpdateDmp() {
       { projectId, isNew = false, formValues }: UpdateDmpArgs,
     ): Promise<string> => {
       const id = isNew
-        ? (await createProject(token, `${DMP_PROJECT_PREFIX}${formValues.grdmProjectName}`)).id
+        ? (await createProject(token, `${DMP_PROJECT_PREFIX}${formValues.dmp.projectInfo.projectName}`)).id
         : projectId
 
       await writeDmpFile(token, id, formValues.dmp)
