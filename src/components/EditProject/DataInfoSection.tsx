@@ -668,6 +668,8 @@ function DataInfoForm({ index, totalCount, onSubmit, onClose, researchPhase, per
 
   const isAddMode = index === totalCount
 
+  const { showSnackbar } = useSnackbar()
+
   // GRDM file metadata fetch
   const linkedFiles = dialogMethods.watch("linkedGrdmFiles") ?? []
   const firstLinkedFile = linkedFiles[0] ?? null
@@ -679,15 +681,13 @@ function DataInfoForm({ index, totalCount, onSubmit, onClose, researchPhase, per
 
   const [compareOpen, setCompareOpen] = useState(false)
 
-  // Open compare modal automatically when GRDM metadata is fetched
-  useEffect(() => {
-    if (grdmFileItem) {
-      setCompareOpen(true)
-    }
-  }, [grdmFileItem])
-
   const handleGrdmFetch = async () => {
-    await refetchGrdm()
+    const result = await refetchGrdm()
+    if (result.data) {
+      setCompareOpen(true)
+    } else {
+      showSnackbar("GRDMファイルメタデータが見つかりませんでした", "warning")
+    }
   }
 
   // ---- Value helpers ----
