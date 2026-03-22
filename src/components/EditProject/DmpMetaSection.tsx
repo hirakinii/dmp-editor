@@ -12,10 +12,9 @@ export interface DmpMetaSectionProps {
   sx?: SxProps
   isNew: boolean
   project?: ProjectInfo | null
-  projects: ProjectInfo[]
 }
 
-export default function DmpMetaSection({ sx, isNew, project, projects }: DmpMetaSectionProps) {
+export default function DmpMetaSection({ sx, isNew, project }: DmpMetaSectionProps) {
   const { control, setValue } = useFormContext<DmpFormValues>()
   const researchPhase = useWatch({ control, name: "dmp.metadata.researchPhase" }) as ResearchPhase
 
@@ -38,7 +37,7 @@ export default function DmpMetaSection({ sx, isNew, project, projects }: DmpMeta
           ))}
         </ToggleButtonGroup>
       </Box>
-      <GrdmProject sx={{ mt: "1rem" }} isNew={isNew} project={project} projects={projects} />
+      <GrdmProject sx={{ mt: "1rem" }} isNew={isNew} project={project} />
       <DmpMetadataSection sx={{ mt: "1.5rem" }} isNew={isNew} />
     </Box>
   )

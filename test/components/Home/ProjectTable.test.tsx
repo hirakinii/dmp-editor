@@ -67,7 +67,7 @@ const mockProjects: ProjectInfo[] = [
   {
     id: "project-001",
     type: "project",
-    title: "dmp-project-Test Project 1",
+    title: "DMP-Test Project 1",
     description: "desc1",
     category: "project",
     dateCreated: "2024-01-01T00:00:00Z",
@@ -78,7 +78,7 @@ const mockProjects: ProjectInfo[] = [
   {
     id: "project-002",
     type: "project",
-    title: "dmp-project-Test Project 2",
+    title: "DMP-Test Project 2",
     description: "desc2",
     category: "project",
     dateCreated: "2024-02-01T00:00:00Z",
@@ -223,7 +223,7 @@ describe("ProjectTable", () => {
       await user.click(screen.getByText("JSPS 形式"))
 
       await waitFor(() => {
-        expect(capturedFilename).toBe("dmp-jsps-dmp-project-Test Project 1.xlsx")
+        expect(capturedFilename).toBe("dmp-jsps-DMP-Test Project 1.xlsx")
       })
     })
 
@@ -245,7 +245,7 @@ describe("ProjectTable", () => {
       await user.click(screen.getByText("サンプル形式"))
 
       await waitFor(() => {
-        expect(capturedFilename).toBe("dmp-sample-dmp-project-Test Project 1.xlsx")
+        expect(capturedFilename).toBe("dmp-sample-DMP-Test Project 1.xlsx")
       })
     })
   })

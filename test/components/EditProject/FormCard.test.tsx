@@ -89,7 +89,6 @@ function FormCardWrapper({
   const dmp = initDmp(null)
   const methods = useForm<DmpFormValues>({
     defaultValues: {
-      grdmProjectName: "",
       dmp,
       ...defaultValues,
     },
@@ -104,23 +103,23 @@ function FormCardWrapper({
 }
 
 /**
- * Wrapper that registers grdmProjectName with required validation so that
- * trigger() returns false when the field is empty. Used for testing error
- * indicator behavior (requirement ②).
+ * Wrapper that registers dmp.metadata.submissionDate as required with an empty value
+ * so that trigger() returns false when validating Step 0 fields. Used for testing
+ * error indicator behavior (requirement ②).
  */
 function FormCardWrapperWithValidation({ isNew = false }: { isNew?: boolean }) {
   const dmp = initDmp(null)
   const methods = useForm<DmpFormValues>({
-    defaultValues: { grdmProjectName: "", dmp },
+    defaultValues: { dmp: { ...dmp, metadata: { ...dmp.metadata, submissionDate: "" } } },
     mode: "onBlur",
     reValidateMode: "onBlur",
   })
   return (
     <FormProvider {...methods}>
-      {/* Hidden input registers grdmProjectName with required rule for test validation */}
+      {/* Hidden input registers submissionDate as required so trigger() fails on Step 0 */}
       <input
-        {...methods.register("grdmProjectName", { required: "必須" })}
-        data-testid="hidden-grdm-input"
+        {...methods.register("dmp.metadata.submissionDate", { required: "必須" })}
+        data-testid="hidden-submission-date-input"
         style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
       />
       <FormCard isNew={isNew} user={mockUser} projects={mockProjects} onSaveStart={vi.fn()} onSaveEnd={vi.fn()} />
@@ -209,7 +208,6 @@ describe("FormCard with Stepper", () => {
       renderWithProviders(
         <FormCardWrapper
           defaultValues={{
-            grdmProjectName: "Test Project",
             dmp: {
               ...initDmp(null),
               metadata: {
@@ -236,7 +234,6 @@ describe("FormCard with Stepper", () => {
       renderWithProviders(
         <FormCardWrapper
           defaultValues={{
-            grdmProjectName: "Test Project",
             dmp: {
               ...initDmp(null),
               metadata: {
@@ -360,10 +357,10 @@ describe("FormCard with Stepper", () => {
   describe("error indicator (requirement ②): shows ! on steps with missing required fields", () => {
     it("shows ! error icon on current step when 次へ is clicked with invalid fields", async () => {
       const user = userEvent.setup()
-      // Use wrapper that registers grdmProjectName as required (empty = invalid)
+      // Use wrapper that registers submissionDate as required (empty = invalid)
       renderWithProviders(<FormCardWrapperWithValidation isNew />)
 
-      // grdmProjectName is empty → trigger("grdmProjectName") will fail
+      // submissionDate is empty → trigger("dmp.metadata.submissionDate") will fail
       await user.click(screen.getByRole("button", { name: "次へ" }))
 
       await waitFor(() => {
@@ -375,7 +372,7 @@ describe("FormCard with Stepper", () => {
       const user = userEvent.setup()
       renderWithProviders(<FormCardWrapperWithValidation isNew={false} />)
 
-      // Click プロジェクト情報 (step 1) from step 0 while grdmProjectName is empty
+      // Click プロジェクト情報 (step 1) from step 0 while submissionDate is empty
       await user.click(screen.getByText("プロジェクト情報"))
 
       await waitFor(() => {
@@ -388,13 +385,8 @@ describe("FormCard with Stepper", () => {
 
     it("does not show ! error icon when navigating with valid fields (isNew=false)", async () => {
       const user = userEvent.setup()
-      // Use standard wrapper with valid grdmProjectName
-      renderWithProviders(
-        <FormCardWrapper
-          isNew={false}
-          defaultValues={{ grdmProjectName: "Test Project" }}
-        />,
-      )
+      // Use standard wrapper with valid default values (all metadata fields have non-empty defaults)
+      renderWithProviders(<FormCardWrapper isNew={false} />)
 
       await user.click(screen.getByText("プロジェクト情報"))
 
@@ -513,8 +505,7 @@ describe("FormCard with Stepper", () => {
         onSuccess("new-project-id")
       })
 
-      // Provide a non-empty grdmProjectName so onSubmit does not early-return.
-      renderWithProviders(<FormCardWrapper isNew defaultValues={{ grdmProjectName: "Test Project" }} />)
+      renderWithProviders(<FormCardWrapper isNew />)
 
       // Navigate to last step via 次へ (step bar navigation is disabled for isNew)
       await advanceToLastStep(user)

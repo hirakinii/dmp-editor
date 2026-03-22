@@ -1,72 +1,26 @@
 import OpenInNew from "@mui/icons-material/OpenInNew"
-import { Box, FormControl, OutlinedInput, FormHelperText, Typography, Link } from "@mui/material"
+import { Box, Typography, Link } from "@mui/material"
 import { SxProps } from "@mui/system"
-import { useFormContext, Controller } from "react-hook-form"
 
-import OurFormLabel from "@/components/EditProject/OurFormLabel"
-import { DmpFormValues } from "@/dmp"
-import { DMP_PROJECT_PREFIX, ProjectInfo } from "@/grdmClient"
-import { theme } from "@/theme"
+import { ProjectInfo } from "@/grdmClient"
 
 export interface GrdmProjectProps {
   sx?: SxProps
   isNew: boolean
   project?: ProjectInfo | null
-  projects: ProjectInfo[]
 }
 
-function NewGrdmProject({ projects }: { projects: ProjectInfo[] }) {
-  const { control } = useFormContext<DmpFormValues>()
-  const existingNames = projects.map((p) => p.title).filter((title) => title.startsWith(DMP_PROJECT_PREFIX))
-
+function NewGrdmProject() {
   return (
-    <>
-      <Typography>
-        {"DMP の情報は、新しく作成する GRDM プロジェクトに保存されます。"}
-        <br />
-        {"作成する GRDM プロジェクトの名前を入力してください。"}
+    <Typography>
+      {"DMP の情報は、新しく作成する GRDM プロジェクトに保存されます。"}
+      <br />
+      {"保存先プロジェクト名は「プロジェクト情報」で入力する「プロジェクト名」をもとに"}
+      <Typography component="span" sx={{ fontFamily: "monospace" }}>
+        {"DMP-[プロジェクト名]"}
       </Typography>
-      <FormControl fullWidth sx={{ mt: "1rem" }}>
-        <OurFormLabel label="GRDM プロジェクト名" required />
-        <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-          <Typography
-            sx={{
-              fontFamily: "monospace",
-              color: theme.palette.grey[700],
-              whiteSpace: "nowrap",
-              mb: "1.6rem",
-            }}
-            children={DMP_PROJECT_PREFIX}
-          />
-          <Controller
-            name="grdmProjectName"
-            control={control}
-            rules={{
-              required: "プロジェクト名は必須です",
-              validate: (value: string) => {
-                const full = `${DMP_PROJECT_PREFIX}${value}`
-                return existingNames.includes(full) ? "同じ名前のプロジェクトが存在します" : true
-              },
-            }}
-            render={({ field, fieldState: { error } }) => (
-              <Box sx={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
-                <OutlinedInput
-                  {...field}
-                  size="small"
-                  error={!!error}
-                  fullWidth
-                  onBlur={field.onBlur}
-                  sx={{ maxWidth: "380px" }}
-                />
-                <FormHelperText error={!!error}>
-                  {error?.message ?? "\"dmp-project-\" という prefix が付与されます。"}
-                </FormHelperText>
-              </Box>
-            )}
-          />
-        </Box>
-      </FormControl>
-    </>
+      {"として自動決定されます。"}
+    </Typography>
   )
 }
 
@@ -98,10 +52,10 @@ function ExistingGrdmProject({ project }: { project?: ProjectInfo | null }) {
   )
 }
 
-export default function GrdmProject({ sx, isNew, project, projects }: GrdmProjectProps) {
+export default function GrdmProject({ sx, isNew, project }: GrdmProjectProps) {
   return (
     <Box sx={sx}>
-      {isNew ? <NewGrdmProject projects={projects} /> : <ExistingGrdmProject project={project} />}
+      {isNew ? <NewGrdmProject /> : <ExistingGrdmProject project={project} />}
     </Box>
   )
 }

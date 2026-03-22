@@ -21,7 +21,8 @@ import { GRDM_CONFIG } from "@/config"
 import { Dmp, dmpSchema } from "@/dmp"
 
 export const DMP_FILE_NAME = "dmp-project.json"
-export const DMP_PROJECT_PREFIX = "dmp-project-"
+export const DMP_PROJECT_PREFIX = "DMP-"
+const DMP_FILE_CHECK_CONCURRENCY = 4
 const GRDM_API_BASE_URL = GRDM_CONFIG.API_BASE_URL
 
 /**
@@ -392,6 +393,65 @@ export const listingProjects = async (
   return response.data
     .map((node) => nodeToProjectInfo(node))
     .filter((project) => project.category === "project")
+}
+
+/**
+ * Runs tasks with bounded concurrency (at most `limit` workers at a time).
+ * Results preserve input order; failures are captured as rejected entries.
+ */
+async function runWithConcurrency<T>(
+  tasks: (() => Promise<T>)[],
+  limit: number,
+): Promise<PromiseSettledResult<T>[]> {
+  const results: PromiseSettledResult<T>[] = new Array(tasks.length)
+  let index = 0
+
+  async function worker(): Promise<void> {
+    while (index < tasks.length) {
+      const i = index++
+      try {
+        results[i] = { status: "fulfilled", value: await tasks[i]() }
+      } catch (error) {
+        results[i] = { status: "rejected", reason: error }
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, worker))
+  return results
+}
+
+/**
+ * Returns true if dmp-project.json exists at the root of the project's osfstorage.
+ * Returns false on any error (e.g. network error, permission denied).
+ */
+const hasDmpFile = async (token: string, projectId: string): Promise<boolean> => {
+  try {
+    const response = await listingFileNodes(token, projectId, null, false)
+    return response.data.some((node) => node.attributes.name === DMP_FILE_NAME)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Returns GRDM projects managed by DMP Editor:
+ *   - title starts with DMP_PROJECT_PREFIX ("DMP-"), AND
+ *   - dmp-project.json exists in the project root.
+ *
+ * File-existence checks are performed with bounded concurrency
+ * (DMP_FILE_CHECK_CONCURRENCY workers) to respect GRDM's rate limit (~5 req/s).
+ */
+export const listingDmpProjects = async (token: string): Promise<ProjectInfo[]> => {
+  const candidates = await listingProjects(token, DMP_PROJECT_PREFIX)
+
+  const tasks = candidates.map((project) => () => hasDmpFile(token, project.id))
+  const settled = await runWithConcurrency(tasks, DMP_FILE_CHECK_CONCURRENCY)
+
+  return candidates.filter((_, i) => {
+    const result = settled[i]
+    return result.status === "fulfilled" && result.value === true
+  })
 }
 
 export const formatDateToTimezone = (dateString: string, timeZone = "Asia/Tokyo"): string => {

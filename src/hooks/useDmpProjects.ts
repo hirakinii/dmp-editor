@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { useRecoilValue } from "recoil"
 
-import { listingProjects, ProjectInfo, DMP_PROJECT_PREFIX } from "@/grdmClient"
+import { listingDmpProjects, ProjectInfo } from "@/grdmClient"
 import { tokenAtom } from "@/store/token"
 
 /**
@@ -13,7 +13,7 @@ export const useDmpProjects = () => {
 
   return useQuery<ProjectInfo[], Error>({
     queryKey: ["projects", token],
-    queryFn: () => listingProjects(token, DMP_PROJECT_PREFIX),
+    queryFn: () => listingDmpProjects(token),
     enabled: !!token,
   })
 }

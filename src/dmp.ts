@@ -125,7 +125,6 @@ export const dmpSchema = z.object({
 export type Dmp = z.infer<typeof dmpSchema>
 
 export interface DmpFormValues {
-  grdmProjectName: string
   dmp: Dmp
 }
 

@@ -228,12 +228,12 @@ describe("listingProjects", () => {
     const paginatedResult = makePaginatedResult([])
     mockListNodesPaginated.mockResolvedValue(paginatedResult)
 
-    await listingProjects("test-token", "dmp-project-")
+    await listingProjects("test-token", "DMP-")
 
     expect(mockListNodesPaginated).toHaveBeenCalledWith(
       expect.objectContaining({
         "filter[category]": "project",
-        "filter[title]": "dmp-project-",
+        "filter[title]": "DMP-",
       }),
     )
   })
