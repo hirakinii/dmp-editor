@@ -35,6 +35,7 @@ export interface FormCardProps {
   user: User
   project?: ProjectInfo | null
   projects: ProjectInfo[]
+  isProjectsLoading?: boolean
   /** Called immediately when the save mutation starts (to show a full-page loading overlay). */
   onSaveStart: () => void
   /** Called when the save mutation fails (to hide the loading overlay). */
@@ -107,7 +108,7 @@ function formatSaveError(error: unknown): string {
   return prefix
 }
 
-export default function FormCard({ sx, isNew = false, user, project, projects, onSaveStart, onSaveEnd }: FormCardProps) {
+export default function FormCard({ sx, isNew = false, user, project, projects, isProjectsLoading = false, onSaveStart, onSaveEnd }: FormCardProps) {
   const { projectId = "" } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
   const { getValues, setValue, handleSubmit, formState, reset, trigger } = useFormContext<DmpFormValues>()
@@ -240,7 +241,7 @@ export default function FormCard({ sx, isNew = false, user, project, projects, o
           {activeStep === 3 && <DataInfoSection user={user} projects={projects} />}
           {activeStep === 4 && (
             <>
-              <ProjectTableSection user={user} projects={projects} />
+              <ProjectTableSection user={user} projects={projects} isLoading={isProjectsLoading} />
               <Divider sx={{ my: "1.5rem" }} />
               <FileTreeSection projects={projects} />
             </>

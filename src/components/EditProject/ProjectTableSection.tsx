@@ -17,6 +17,7 @@ interface ProjectTableProps {
   sx?: SxProps
   user: User
   projects: ProjectInfo[]
+  isLoading?: boolean
 }
 
 interface ProjectRowProps {
@@ -157,7 +158,7 @@ function ProjectRow({ project, user, isLinked, onLink, onUnlinkRequest }: Projec
   )
 }
 
-export default function ProjectTableSection({ sx, user, projects }: ProjectTableProps) {
+export default function ProjectTableSection({ sx, user, projects, isLoading = false }: ProjectTableProps) {
   const { control } = useFormContext<DmpFormValues>()
   const { insert, remove } = useFieldArray<DmpFormValues, "dmp.linkedGrdmProjects">({
     control,
@@ -298,7 +299,16 @@ export default function ProjectTableSection({ sx, user, projects }: ProjectTable
               </TableRow>
             </TableHead>
             <TableBody>
-              {displayedProjects.length === 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={4} sx={{ textAlign: "center", color: "text.secondary", py: "1.5rem" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
+                      <CircularProgress size={14} />
+                      {"GRDM プロジェクトを取得中です。"}
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ) : displayedProjects.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} sx={{ textAlign: "center", color: "text.secondary", py: "1.5rem" }}>
                     {"一致するプロジェクトがありません。"}

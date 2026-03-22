@@ -44,14 +44,12 @@ export default function EditProject({ isNew = false }: EditProjectProps) {
     return () => clearTimeout(timer)
   }, [isNew])
 
+  // Projects are intentionally excluded from the page-level loading gate.
+  // ProjectTableSection handles its own loading state so the form can be
+  // shown while the GRDM project list is still being fetched in the background.
   const loading = isNew
-    ? !formInitialized || !minDelayComplete || userQuery.isLoading || projectsQuery.isLoading
-    : dmpQuery.isLoading ||
-      userQuery.isLoading ||
-      projectQuery.isLoading ||
-      projectsQuery.isLoading ||
-      !userQuery.data ||
-      !projectsQuery.data
+    ? !formInitialized || !minDelayComplete || userQuery.isLoading
+    : dmpQuery.isLoading || userQuery.isLoading || projectQuery.isLoading || !userQuery.data
   const error = dmpQuery.error || userQuery.error || projectQuery.error || projectsQuery.error
 
   const methods = useForm<DmpFormValues>({
@@ -67,7 +65,7 @@ export default function EditProject({ isNew = false }: EditProjectProps) {
     if (isNew) {
       // Guard with !formInitialized to prevent re-initialization on query refetch,
       // which would overwrite user-entered form values like grdmProjectName.
-      if (!formInitialized && userQuery.data && projectsQuery.data) {
+      if (!formInitialized && userQuery.data) {
         methods.reset({
           dmp: initDmp(userQuery.data),
         })
@@ -78,7 +76,7 @@ export default function EditProject({ isNew = false }: EditProjectProps) {
         dmp: dmpQuery.data,
       })
     }
-  }, [formInitialized, isNew, methods, dmpQuery.data, userQuery.data, projectQuery.data, projectsQuery.data])
+  }, [formInitialized, isNew, methods, dmpQuery.data, userQuery.data, projectQuery.data])
 
   // Stable function that reads from the RHF live store at navigation time.
   // methods.formState.isDirty reads from a React-state-backed proxy, which is
@@ -115,7 +113,8 @@ export default function EditProject({ isNew = false }: EditProjectProps) {
           isNew={isNew}
           user={userQuery.data!}
           project={projectQuery.data}
-          projects={projectsQuery.data!}
+          projects={projectsQuery.data ?? []}
+          isProjectsLoading={projectsQuery.isLoading}
           onSaveStart={() => setIsSaving(true)}
           onSaveEnd={() => setIsSaving(false)}
         />
