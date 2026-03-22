@@ -1,9 +1,10 @@
 import AddLinkOutlined from "@mui/icons-material/AddLinkOutlined"
 import LinkOffOutlined from "@mui/icons-material/LinkOffOutlined"
 import OpenInNew from "@mui/icons-material/OpenInNew"
-import { Box, Button, Link, Typography, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Paper, colors, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress, Collapse } from "@mui/material"
+import Search from "@mui/icons-material/Search"
+import { Box, Button, Link, Typography, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Paper, colors, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress, Collapse, TextField, InputAdornment } from "@mui/material"
 import { SxProps } from "@mui/system"
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form"
 
 import SectionHeader from "@/components/EditProject/SectionHeader"
@@ -16,6 +17,7 @@ interface ProjectTableProps {
   sx?: SxProps
   user: User
   projects: ProjectInfo[]
+  isLoading?: boolean
 }
 
 interface ProjectRowProps {
@@ -156,7 +158,7 @@ function ProjectRow({ project, user, isLinked, onLink, onUnlinkRequest }: Projec
   )
 }
 
-export default function ProjectTableSection({ sx, user, projects }: ProjectTableProps) {
+export default function ProjectTableSection({ sx, user, projects, isLoading = false }: ProjectTableProps) {
   const { control } = useFormContext<DmpFormValues>()
   const { insert, remove } = useFieldArray<DmpFormValues, "dmp.linkedGrdmProjects">({
     control,
@@ -167,8 +169,29 @@ export default function ProjectTableSection({ sx, user, projects }: ProjectTable
     defaultValue: [],
   }) as DmpFormValues["dmp"]["linkedGrdmProjects"]
 
+  const [searchQuery, setSearchQuery] = useState("")
+  const [displayCount, setDisplayCount] = useState(10)
+  const sentinelRef = useRef<HTMLTableRowElement>(null)
+
   const linkedProjectIds = linkingProjects.map((p) => p.projectId)
   const filtered = projects.filter((p) => !p.title.startsWith(DMP_PROJECT_PREFIX))
+  const searchFiltered = filtered.filter((p) =>
+    p.title.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
+  const displayedProjects = searchFiltered.slice(0, displayCount)
+  const hasMore = displayCount < searchFiltered.length
+
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setDisplayCount((c) => c + 10)
+      },
+      { threshold: 0.1 },
+    )
+    observer.observe(sentinelRef.current)
+    return () => observer.disconnect()
+  }, [hasMore, displayCount])
 
   const { update: updateDataInfo } = useFieldArray<DmpFormValues, "dmp.dataInfo">({
     control,
@@ -244,30 +267,93 @@ export default function ProjectTableSection({ sx, user, projects }: ProjectTable
         <br />
         {"あなたの GRDM アカウント上の GRDM Project 一覧です。"}
       </Typography>
-      <TableContainer component={Paper} variant="outlined" sx={{ borderBottom: "none", mt: "1.5rem" }}>
-        <Table>
-          <TableHead sx={{ backgroundColor: colors.grey[100] }}>
-            <TableRow>
-              <TableCell sx={{ fontWeight: "bold", textAlign: "left", p: "0.5rem 1rem", width: "40%" }}>{"プロジェクト名"}</TableCell>
-              <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "20%" }}>{"作成日"}</TableCell>
-              <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "20%" }}>{"最終更新日"}</TableCell>
-              <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "20%" }} />
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filtered.map((project) => (
-              <ProjectRow
-                key={project.id}
-                project={project}
-                user={user}
-                isLinked={linkedProjectIds.includes(project.id)}
-                onLink={handleLinkProject}
-                onUnlinkRequest={handleUnlinkProjectRequest}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <TextField
+        size="small"
+        placeholder="プロジェクト名で検索"
+        value={searchQuery}
+        onChange={(e) => {
+          setSearchQuery(e.target.value)
+          setDisplayCount(10)
+        }}
+        slotProps={{
+          input: {
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search fontSize="small" />
+              </InputAdornment>
+            ),
+          },
+        }}
+        sx={{ mt: "1rem", width: "320px" }}
+      />
+
+      <Box sx={{ position: "relative", mt: "1rem" }}>
+        <TableContainer component={Paper} variant="outlined" sx={{ borderBottom: "none", maxHeight: "530px", overflow: "auto" }}>
+          <Table stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "left", p: "0.5rem 1rem", width: "40%", backgroundColor: colors.grey[100] }}>{"プロジェクト名"}</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "20%", backgroundColor: colors.grey[100] }}>{"作成日"}</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "20%", backgroundColor: colors.grey[100] }}>{"最終更新日"}</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "20%", backgroundColor: colors.grey[100] }} />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={4} sx={{ textAlign: "center", color: "text.secondary", py: "1.5rem" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
+                      <CircularProgress size={14} />
+                      {"GRDM プロジェクトを取得中です。"}
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ) : displayedProjects.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} sx={{ textAlign: "center", color: "text.secondary", py: "1.5rem" }}>
+                    {"一致するプロジェクトがありません。"}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                <>
+                  {displayedProjects.map((project) => (
+                    <ProjectRow
+                      key={project.id}
+                      project={project}
+                      user={user}
+                      isLinked={linkedProjectIds.includes(project.id)}
+                      onLink={handleLinkProject}
+                      onUnlinkRequest={handleUnlinkProjectRequest}
+                    />
+                  ))}
+                  {hasMore && (
+                    <TableRow ref={sentinelRef}>
+                      <TableCell colSpan={4} sx={{ textAlign: "center", py: "1rem", borderBottom: "none" }}>
+                        <CircularProgress size={20} />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        {hasMore && (
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: "64px",
+              background: "linear-gradient(transparent, white)",
+              pointerEvents: "none",
+              borderRadius: "0 0 4px 4px",
+            }}
+          />
+        )}
+      </Box>
 
       <Dialog
         open={confirmDialogOpen}
