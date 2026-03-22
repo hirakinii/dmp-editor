@@ -1,12 +1,12 @@
 import "../../src/vite-env.d.ts"
 import { KakenApiClient } from "@hirakinii-packages/kaken-api-client-typescript"
-import type { Project, ProjectsResponse } from "@hirakinii-packages/kaken-api-client-typescript"
+import type { Project, ProjectsResponse, ResearcherRole } from "@hirakinii-packages/kaken-api-client-typescript"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { renderHook } from "@testing-library/react"
 import { createElement } from "react"
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
-import { kakenProjectToDmpProjectInfo, useKakenProject } from "../../src/hooks/useKakenProject"
+import { kakenProjectToDmpProjectInfo, kakenMembersToPersonInfos, useKakenProject } from "../../src/hooks/useKakenProject"
 
 // Mock the KakenApiClient
 const mockSearch = vi.fn()
@@ -155,6 +155,90 @@ describe("kakenProjectToDmpProjectInfo", () => {
   })
 })
 
+describe("kakenMembersToPersonInfos", () => {
+  const principalMember: ResearcherRole = {
+    role: "principal_investigator",
+    name: { fullName: "山田 太郎", familyName: "山田", givenName: "太郎" },
+    eradCode: "1234567890",
+    affiliations: [{ institution: { name: "東京大学" } }],
+  }
+  const coMember: ResearcherRole = {
+    role: "co_investigator_buntan",
+    name: { fullName: "田中 花子", familyName: "田中", givenName: "花子" },
+    affiliations: [{ institution: { name: "京都大学" } }],
+  }
+  const unknownMember: ResearcherRole = {
+    role: "other_role",
+    name: { fullName: "佐藤 次郎", familyName: "佐藤", givenName: "次郎" },
+  }
+
+  it("maps principal_investigator to 研究代表者 role", () => {
+    const results = kakenMembersToPersonInfos([principalMember])
+    expect(results).toHaveLength(1)
+    expect(results[0].role).toEqual(["研究代表者"])
+  })
+
+  it("maps co_investigator_buntan to 研究分担者 role", () => {
+    const results = kakenMembersToPersonInfos([coMember])
+    expect(results).toHaveLength(1)
+    expect(results[0].role).toEqual(["研究分担者"])
+  })
+
+  it("skips members with unrecognized roles", () => {
+    const results = kakenMembersToPersonInfos([unknownMember])
+    expect(results).toHaveLength(0)
+  })
+
+  it("maps name fields correctly", () => {
+    const results = kakenMembersToPersonInfos([principalMember])
+    expect(results[0].lastName).toBe("山田")
+    expect(results[0].firstName).toBe("太郎")
+  })
+
+  it("maps eradCode to eRadResearcherId", () => {
+    const results = kakenMembersToPersonInfos([principalMember])
+    expect(results[0].eRadResearcherId).toBe("1234567890")
+  })
+
+  it("maps first affiliation institution name to affiliation", () => {
+    const results = kakenMembersToPersonInfos([principalMember])
+    expect(results[0].affiliation).toBe("東京大学")
+  })
+
+  it("sets source fields to 'kaken'", () => {
+    const results = kakenMembersToPersonInfos([principalMember])
+    expect(results[0].source?.role).toBe("kaken")
+    expect(results[0].source?.lastName).toBe("kaken")
+    expect(results[0].source?.firstName).toBe("kaken")
+    expect(results[0].source?.eRadResearcherId).toBe("kaken")
+    expect(results[0].source?.affiliation).toBe("kaken")
+  })
+
+  it("handles missing name gracefully (empty strings)", () => {
+    const member: ResearcherRole = { role: "principal_investigator" }
+    const results = kakenMembersToPersonInfos([member])
+    expect(results[0].lastName).toBe("")
+    expect(results[0].firstName).toBe("")
+  })
+
+  it("handles missing affiliations gracefully (empty affiliation)", () => {
+    const member: ResearcherRole = {
+      role: "co_investigator_buntan",
+      name: { fullName: "田中 花子", familyName: "田中", givenName: "花子" },
+      affiliations: [],
+    }
+    const results = kakenMembersToPersonInfos([member])
+    expect(results[0].affiliation).toBe("")
+  })
+
+  it("processes multiple members in order", () => {
+    const results = kakenMembersToPersonInfos([principalMember, coMember])
+    expect(results).toHaveLength(2)
+    expect(results[0].lastName).toBe("山田")
+    expect(results[1].lastName).toBe("田中")
+  })
+})
+
 describe("useKakenProject", () => {
   beforeEach(() => {
     mockSearch.mockReset()
@@ -182,9 +266,9 @@ describe("useKakenProject", () => {
 
     expect(queryResult.isSuccess).toBe(true)
     expect(mockSearch).toHaveBeenCalledWith({ projectNumber: "23K12345" })
-    expect(queryResult.data?.projectCode).toBe("JP23K12345")
-    expect(queryResult.data?.projectName).toBe("テスト研究プロジェクト")
-    expect(queryResult.data?.fundingAgency).toBe("日本学術振興会")
+    expect(queryResult.data?.projectInfo.projectCode).toBe("JP23K12345")
+    expect(queryResult.data?.projectInfo.projectName).toBe("テスト研究プロジェクト")
+    expect(queryResult.data?.projectInfo.fundingAgency).toBe("日本学術振興会")
   })
 
   it("passes appId from KAKEN_APP_ID to KakenApiClient constructor", async () => {
@@ -221,5 +305,51 @@ describe("useKakenProject", () => {
 
     expect(queryResult.isSuccess).toBe(true)
     expect(queryResult.data).toBeNull()
+  })
+
+  it("returns personInfos from project members alongside projectInfo", async () => {
+    const projectWithMembers: Project = {
+      ...mockProject,
+      members: [
+        {
+          role: "principal_investigator",
+          name: { fullName: "山田 太郎", familyName: "山田", givenName: "太郎" },
+          affiliations: [{ institution: { name: "東京大学" } }],
+        },
+        {
+          role: "co_investigator_buntan",
+          name: { fullName: "田中 花子", familyName: "田中", givenName: "花子" },
+          affiliations: [{ institution: { name: "京都大学" } }],
+        },
+      ],
+    }
+    const mockResponse: ProjectsResponse = {
+      rawData: {},
+      projects: [projectWithMembers],
+      totalResults: 1,
+    }
+    mockSearch.mockResolvedValueOnce(mockResponse)
+
+    const { result } = renderHook(() => useKakenProject("23K12345"), { wrapper: createWrapper() })
+    const queryResult = await result.current.refetch()
+
+    expect(queryResult.isSuccess).toBe(true)
+    expect(queryResult.data?.personInfos).toHaveLength(2)
+    expect(queryResult.data?.personInfos[0].role).toEqual(["研究代表者"])
+    expect(queryResult.data?.personInfos[1].role).toEqual(["研究分担者"])
+  })
+
+  it("returns empty personInfos when members is undefined", async () => {
+    const mockResponse: ProjectsResponse = {
+      rawData: {},
+      projects: [{ ...mockProject, members: undefined }],
+      totalResults: 1,
+    }
+    mockSearch.mockResolvedValueOnce(mockResponse)
+
+    const { result } = renderHook(() => useKakenProject("23K12345"), { wrapper: createWrapper() })
+    const queryResult = await result.current.refetch()
+
+    expect(queryResult.data?.personInfos).toEqual([])
   })
 })

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 
-import { initDmp } from "../src/dmp"
+import { initDmp, initPersonInfo, personInfoSchema, personInfoSourceSchema } from "../src/dmp"
 import type { User } from "../src/hooks/useUser"
 
 const baseUser: User = {
@@ -68,5 +68,74 @@ describe("initDmp", () => {
     expect(dmp.metadata.submissionDate).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     expect(dmp.linkedGrdmProjects).toEqual([])
     expect(dmp.dataInfo).toEqual([])
+  })
+})
+
+describe("initPersonInfo", () => {
+  it("includes grdmUserId as undefined", () => {
+    const info = initPersonInfo()
+    expect(info).toHaveProperty("grdmUserId", undefined)
+  })
+
+  it("includes source as undefined", () => {
+    const info = initPersonInfo()
+    expect(info).toHaveProperty("source", undefined)
+  })
+})
+
+describe("personInfoSchema", () => {
+  const base = {
+    role: ["研究代表者"],
+    lastName: "山田",
+    firstName: "太郎",
+    affiliation: "東京大学",
+  }
+
+  it("parses with grdmUserId and source fields", () => {
+    const result = personInfoSchema.parse({
+      ...base,
+      grdmUserId: "abc123",
+      source: { lastName: "grdm", firstName: "grdm", affiliation: "grdm", grdmUserId: "grdm" },
+    })
+    expect(result.grdmUserId).toBe("abc123")
+    expect(result.source?.lastName).toBe("grdm")
+    expect(result.source?.grdmUserId).toBe("grdm")
+  })
+
+  it("parses legacy format without grdmUserId or source (backward compatible)", () => {
+    const result = personInfoSchema.parse(base)
+    expect(result.grdmUserId).toBeUndefined()
+    expect(result.source).toBeUndefined()
+  })
+
+  it("accepts all ValueSource values for each source field", () => {
+    const sources = ["kaken", "grdm", "manual"] as const
+    for (const s of sources) {
+      const result = personInfoSchema.parse({ ...base, source: { lastName: s } })
+      expect(result.source?.lastName).toBe(s)
+    }
+  })
+})
+
+describe("personInfoSourceSchema", () => {
+  it("parses a full source object", () => {
+    const result = personInfoSourceSchema.parse({
+      role: "kaken",
+      lastName: "kaken",
+      firstName: "kaken",
+      eRadResearcherId: "kaken",
+      orcid: "grdm",
+      affiliation: "manual",
+      contact: "manual",
+      grdmUserId: "grdm",
+    })
+    expect(result.role).toBe("kaken")
+    expect(result.orcid).toBe("grdm")
+    expect(result.affiliation).toBe("manual")
+  })
+
+  it("parses an empty object (all fields are optional)", () => {
+    const result = personInfoSourceSchema.parse({})
+    expect(result.role).toBeUndefined()
   })
 })

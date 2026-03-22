@@ -33,6 +33,22 @@ export const projectInfoSchema = z.object({
 export type ProjectInfo = z.infer<typeof projectInfoSchema>
 // 担当者情報
 export const personRole = ["研究代表者", "研究分担者", "管理対象データの作成者", "管理対象データの管理責任者"] as const
+
+export type ValueSource = "kaken" | "grdm" | "manual"
+const valueSourceEnum = z.enum(["kaken", "grdm", "manual"])
+
+export const personInfoSourceSchema = z.object({
+  role: valueSourceEnum.optional(),
+  lastName: valueSourceEnum.optional(),
+  firstName: valueSourceEnum.optional(),
+  eRadResearcherId: valueSourceEnum.optional(),
+  orcid: valueSourceEnum.optional(),
+  affiliation: valueSourceEnum.optional(),
+  contact: valueSourceEnum.optional(),
+  grdmUserId: valueSourceEnum.optional(),
+})
+export type PersonInfoSource = z.infer<typeof personInfoSourceSchema>
+
 export const personInfoSchema = z.object({
   role: z.array(z.enum(personRole)), // no header
   lastName: z.string(), // 性
@@ -41,6 +57,8 @@ export const personInfoSchema = z.object({
   orcid: z.string().nullable().optional(), // ORCID
   affiliation: z.string(), // 所属機関
   contact: z.string().nullable().optional(), // email address
+  grdmUserId: z.string().nullable().optional(), // GRDM User ID
+  source: personInfoSourceSchema.optional(), // origin of each field's value
 })
 export type PersonInfo = z.infer<typeof personInfoSchema>
 
@@ -174,6 +192,8 @@ export const initPersonInfo = (): PersonInfo => {
     orcid: undefined,
     affiliation: "",
     contact: undefined,
+    grdmUserId: undefined,
+    source: undefined,
   }
 }
 
