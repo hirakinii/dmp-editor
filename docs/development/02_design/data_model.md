@@ -1,84 +1,177 @@
+# Data Model
+
+DMP データは GRDM プロジェクト内の `dmp-project.json` として保存されます。以下は `src/dmp.ts` の Zod スキーマに基づくデータモデルです。
+
+## ER 図
+
 ```mermaid
 erDiagram
-    %% Entity Definitions
-    User ||--o{ DMP_Project : "manages"
-    DMP_Project ||--|{ Collaborator : "has members"
-    DMP_Project ||--|{ Dataset : "defines data"
-    DMP_Project |o--|| GRDM_Project_Reference : "links to"
-    Dataset |o--|| GRDM_File_Reference : "maps to"
+    DMP ||--|| DmpMetadata : "has"
+    DMP ||--|| ProjectInfo : "has"
+    DMP ||--o{ PersonInfo : "has members"
+    DMP ||--o{ DataInfo : "has datasets"
+    DMP ||--o{ LinkedGrdmProject : "links to"
+    DataInfo ||--o{ LinkedGrdmFile : "maps to"
 
-    User {
-        string grdm_token "Auth Token (Local Storage)"
-        string user_name "User Name"
-        string grdm_user_id "User ID on GRDM"
+    DMP {
+        string grdmProjectId PK "GRDM project ID (external key)"
     }
 
-    DMP_Project {
-        string id PK "Internal ID (UUID, etc.)"
-        string project_name "DMP Project Name (dmp-project-xxx)"
-        date created_at "Created Timestamp"
-        date updated_at "Last Updated Timestamp"
-        string status "Status (Draft, Finalized, etc.)"
-        
-        %% Basic Information
-        string submission_date "Submission Date"
-        string funding_agency_name "Funding Agency Name"
-        string program_name "Program Name"
-        string program_code "Program Code"
-        string system_number "Systematic Number"
-        string adoption_year "Adoption Year / Grant Year"
-        string start_year "Project Start Year"
-        string end_year "Project End Year"
+    DmpMetadata {
+        enum revisionType "新規 / 修正 / 更新"
+        string submissionDate "提出日 (YYYY-MM-DD)"
+        string dateCreated "DMP 作成日 (auto, YYYY-MM-DD)"
+        string dateModified "最終更新日 (auto, YYYY-MM-DD)"
+        enum researchPhase "計画時 / 研究中 / 報告時"
     }
 
-    Collaborator {
-        string id PK
-        string dmp_project_id FK
-        string role "Role (Principal Investigator, etc.)"
-        string last_name "Last Name"
-        string first_name "First Name"
-        string affiliation "Affiliation"
-        string e_rad_id "e-Rad Researcher ID"
-        string orcid_id "ORCID"
-        int display_order "Display Order"
+    ProjectInfo {
+        string fundingAgency "資金配分機関名"
+        string programName "プログラム名 (nullable)"
+        string programCode "プログラムコード (nullable)"
+        string projectCode "体系的番号 (15桁)"
+        string projectName "プロジェクト名"
+        string adoptionYear "採択年度 (nullable)"
+        string startYear "事業開始年度 (nullable)"
+        string endYear "事業終了年度 (nullable)"
     }
 
-    Dataset {
-        string id PK
-        string dmp_project_id FK
-        
-        %% Basic Data Information
-        string name "Data Name"
-        date publication_date "Publication/Update Date"
-        string description "Description"
-        string collection_method "Acquisition/Collection Method"
-        string field "Data Field/Domain"
-        string type "Data Type"
-        string data_size "Approximate Data Size"
-        string reuse_info "Reuse Information"
-        
-        %% Security Policy
-        boolean has_confidential_info "Contains Confidential Info"
-        string confidential_policy "Sensitive Data Handling Policy"
-        string usage_policy_during "Usage Policy (During Research)"
-        string repository_during "Storage Location (During Research)"
-        string backup_location "Backup Location"
-        
-        %% Publication Settings
-        string sharing_policy_detail "Sharing Policy Details"
-        string access_right "Access Rights (Public/Restricted)"
-        date planned_publication_date "Planned Publication Date"
-        string repository_after "Storage Location (After Research)"
+    PersonInfo {
+        string[] role "役割 (複数選択)"
+        string lastName "姓"
+        string firstName "名"
+        string eRadResearcherId "e-Rad 研究者番号 (nullable)"
+        string orcid "ORCID (nullable)"
+        string affiliation "所属機関"
+        string contact "連絡先メール (nullable)"
+        string grdmUserId "GRDM ユーザーID (nullable)"
+        object source "各フィールドの値の出典 (kaken/grdm/manual)"
     }
 
-    GRDM_Project_Reference {
-        string grdm_project_id PK "Foreign Key (GRDM)"
-        string project_name "Project Name on GRDM"
-        string url "Project URL"
+    DataInfo {
+        string dataName "管理対象データの名称"
+        string publicationDate "掲載日・掲載更新日 (nullable)"
+        string description "データの説明"
+        string acquisitionMethod "取得・収集方法 (nullable)"
+        enum researchField "データの分野 (11選択肢)"
+        enum dataType "データ種別 (14選択肢)"
+        string dataSize "概略データ量 (nullable)"
+        string reuseInformation "再利用情報 (nullable)"
+        enum hasSensitiveData "機微情報の有無 (有/無, nullable)"
+        string sensitiveDataPolicy "機微情報の取扱い方針 (nullable)"
+        string usagePolicy "利活用・提供方針 (研究活動時)"
+        string repositoryInformation "リポジトリ情報 (研究活動時)"
+        string backupLocation "バックアップ場所 (nullable)"
+        string publicationPolicy "公開・提供方針詳細 (nullable)"
+        enum accessRights "アクセス権 (公開/共有/非共有・非公開/公開期間猶予)"
+        string plannedPublicationDate "公開予定日 (nullable, YYYY-MM-DD)"
+        string repository "リポジトリ情報 (研究活動後, nullable)"
+        int dataCreator "担当者インデックス (nullable)"
+        string dataManagementAgency "データ管理機関"
+        string rorId "ROR ID (nullable)"
+        string dataManager "データ管理者"
+        string dataManagerContact "データ管理者連絡先"
+        string dataStorageLocation "保存場所 (研究事業終了後, nullable)"
+        string dataStoragePeriod "保存期間 (研究事業終了後, nullable)"
+        object source "各フィールドの値の出典"
     }
 
-    GRDM_File_Reference {
-        string file_path "File Path in GRDM"
-        string file_id "File ID on GRDM"
+    LinkedGrdmProject {
+        string projectId "GRDM プロジェクト ID"
+        string projectName "GRDM プロジェクト名"
+        string projectUrl "GRDM プロジェクト URL"
+    }
+
+    LinkedGrdmFile {
+        string fileId "GRDM ファイル ID"
+        string filePath "GRDM 上のファイルパス"
+        int size "ファイルサイズ (bytes, nullable)"
+        string materializedPath "マテリアライズドパス (nullable)"
+        string lastTouched "最終アクセス日時 (nullable)"
+        string dateModified "更新日時 (nullable)"
+        string dateCreated "作成日時 (nullable)"
+        string hashMd5 "MD5 ハッシュ値 (nullable)"
+        string hashSha256 "SHA256 ハッシュ値 (nullable)"
+        string link "ダウンロードリンク (nullable)"
     }
 ```
+
+## JSON 構造
+
+```json
+{
+  "metadata": {
+    "revisionType": "新規",
+    "submissionDate": "2025-04-01",
+    "dateCreated": "2025-04-01",
+    "dateModified": "2025-04-01",
+    "researchPhase": "計画時"
+  },
+  "projectInfo": {
+    "fundingAgency": "日本学術振興会",
+    "programName": "科学研究費助成事業",
+    "programCode": "JP",
+    "projectCode": "230000000000000",
+    "projectName": "〇〇に関する研究",
+    "adoptionYear": "2023",
+    "startYear": "2023",
+    "endYear": "2025"
+  },
+  "personInfo": [
+    {
+      "role": ["研究代表者"],
+      "lastName": "山田",
+      "firstName": "太郎",
+      "affiliation": "〇〇大学",
+      "eRadResearcherId": "12345678",
+      "orcid": "0000-0000-0000-0000",
+      "contact": "taro@example.ac.jp",
+      "grdmUserId": "abc123",
+      "source": { "lastName": "kaken", "firstName": "kaken" }
+    }
+  ],
+  "dataInfo": [
+    {
+      "dataName": "実験データセット A",
+      "description": "〇〇実験で取得したデータ",
+      "researchField": "ライフサイエンス",
+      "dataType": "実験データ",
+      "usagePolicy": "プロジェクトメンバーのみ",
+      "repositoryInformation": "GRDM プロジェクト内",
+      "accessRights": "公開",
+      "dataManagementAgency": "〇〇大学",
+      "rorId": "https://ror.org/xxxxxxxx",
+      "dataManager": "研究推進部",
+      "dataManagerContact": "rdm@example.ac.jp",
+      "linkedGrdmFiles": [
+        {
+          "fileId": "abc123",
+          "filePath": "/data/experiment_a.csv",
+          "hashMd5": "d41d8cd98f00b204e9800998ecf8427e"
+        }
+      ]
+    }
+  ],
+  "linkedGrdmProjects": [
+    {
+      "projectId": "xxxxx",
+      "projectName": "DMP-〇〇に関する研究",
+      "projectUrl": "https://rdm.nii.ac.jp/xxxxx"
+    }
+  ]
+}
+```
+
+## 値の出典（source フィールド）
+
+`personInfo` および `dataInfo` の各フィールドには `source` オブジェクトが付随し、値がどこから取得されたかを記録します。
+
+| 値 | 意味 |
+|----|------|
+| `"kaken"` | KAKEN API から自動取得 |
+| `"grdm"` | GRDM ユーザー検索から取得 |
+| `undefined` | ユーザーが手動入力 |
+
+## 後方互換性
+
+旧バージョンの `dmp-project.json` は `linkedGrdmProjectIds`（文字列配列）を使用していました。`readDmpFile()` がファイル読み込み時に自動的に `linkedGrdmProjects`（オブジェクト配列）へマイグレーションします。
