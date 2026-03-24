@@ -1,0 +1,15 @@
+{
+  "error": {
+    "title": "An error occurred.",
+    "description": "An unexpected error occurred. Please share the details below with the developers.",
+    "errorMessage": "Error Message",
+    "stackTrace": "Stack Trace",
+    "retry": "Retry",
+    "clearAndRetry": "Clear Cache and Retry"
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "description": "The page you are looking for does not exist or may have been moved.\nPlease check the URL or return to the home page.",
+    "backToHome": "Back to Home"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "header": {
+    "goToGrdmProfile": "GRDM プロフィールへ",
+    "copyAccessToken": "アクセストークンをコピー",
+    "copied": "コピーしました",
+    "signOut": "サインアウト",
+    "signedOut": "サインアウトしました。"
+  },
+  "language": {
+    "ja": "日本語",
+    "en": "English"
+  }
+}

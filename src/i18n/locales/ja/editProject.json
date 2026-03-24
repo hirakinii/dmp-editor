@@ -1,0 +1,352 @@
+{
+  "page": {
+    "saving": "GRDMに保存中...",
+    "unsavedDialog": {
+      "title": "未保存の変更があります",
+      "description": "保存せずにページを離れると、変更内容が失われます。続けますか？",
+      "stay": "このページに留まる",
+      "leave": "変更を破棄して離れる"
+    }
+  },
+  "formCard": {
+    "titleNew": "DMP Project の新規作成",
+    "titleEdit": "DMP Project の編集",
+    "steps": {
+      "basicSettings": "基本設定",
+      "projectInfo": "プロジェクト情報",
+      "personInfo": "担当者情報",
+      "dataInfo": "研究データ情報",
+      "grdmLink": "GRDM 連携"
+    },
+    "back": "前へ",
+    "next": "次へ",
+    "saveToGrdm": "GRDM に保存する",
+    "saveDone": "DMPを保存しました",
+    "saveError": {
+      "prefix": "GRDMへの保存に失敗しました",
+      "partialSave": "GRDMへの保存に失敗しました：プロジェクト名の変更は完了しましたが、DMP ファイルの保存に失敗しました。再度保存を実行してください。",
+      "timeout": "GRDMへの保存に失敗しました：タイムアウト"
+    }
+  },
+  "dmpMeta": {
+    "researchPhaseLabel": "研究フェーズ:",
+    "section": "DMP 作成・更新情報",
+    "fields": {
+      "revisionType": "種別",
+      "submissionDate": "提出日",
+      "dateCreated": "DMP 作成年月日"
+    },
+    "validation": {
+      "submissionDateAfterCreated": "提出日は DMP 作成年月日以降の日付を入力してください",
+      "required": "{{label}} は必須です"
+    }
+  },
+  "grdmProject": {
+    "newDescription1": "DMP の情報は、新しく作成する GRDM プロジェクトに保存されます。",
+    "newDescription2": "保存先プロジェクト名は「プロジェクト情報」で入力する「プロジェクト名」をもとに",
+    "newDescription3": "DMP-[プロジェクト名]",
+    "newDescription4": "として自動決定されます。",
+    "existingDescription": "DMP Project は、以下の GRDM プロジェクト内に保存されています。"
+  },
+  "projectInfo": {
+    "sectionTitle": "プロジェクト情報",
+    "fields": {
+      "fundingAgency": "資金配分機関情報",
+      "programName": "プログラム名 (事業名・種目名)",
+      "programCode": "体系的番号におけるプログラム情報コード",
+      "projectCode": "体系的番号",
+      "projectName": "プロジェクト名",
+      "adoptionYear": "採択年度",
+      "startYear": "事業開始年度",
+      "endYear": "事業終了年度"
+    },
+    "helpChip": {
+      "programNamePart1": "NISTEP 体系的番号一覧 (",
+      "programNamePart2": ") の「事業・制度名」を記載してください。",
+      "programCodePart1": "NISTEP 体系的番号一覧 (",
+      "programCodePart2": ") に掲載されている「機関コード」および「施策・事業の特定コード」を表すコードを記載してください。"
+    },
+    "kakenSearch": {
+      "label": "KAKEN番号で自動補完",
+      "placeholder": "例: 23K12345",
+      "search": "検索",
+      "searching": "検索中...",
+      "addedPersons": "{{count}} 名の担当者を追加しました",
+      "addedPersonsWithSkip": "{{count}} 名の担当者を追加しました（重複 {{skip}} 名はスキップしました）",
+      "skippedPersons": "重複する担当者 {{count}} 名をスキップしました",
+      "autocompleted": "プロジェクト情報を自動補完しました",
+      "notFound": "KAKEN番号に該当するプロジェクトが見つかりませんでした",
+      "fetchFailed": "情報の取得に失敗しました"
+    },
+    "duplicateDialog": {
+      "title": "同名の担当者が存在します",
+      "description": "KAKEN から取得した以下の担当者はすでに登録されています。担当者情報を確認してください。",
+      "colItem": "項目",
+      "colExisting": "既存の情報",
+      "colKaken": "KAKEN の情報",
+      "rowRole": "役割",
+      "rowAffiliation": "所属機関",
+      "rowERadId": "e-Rad 研究者番号",
+      "skipAll": "スキップして閉じる",
+      "cancel": "キャンセル"
+    },
+    "validation": {
+      "required": "{{label}} は必須です"
+    }
+  },
+  "personInfo": {
+    "sectionTitle": "担当者情報",
+    "colRole": "役割",
+    "colName": "名前",
+    "colERadId": "e-Rad 研究者番号",
+    "colOrcid": "ORCID",
+    "colAffiliation": "所属機関",
+    "colContact": "連絡先",
+    "addPerson": "担当者を追加する",
+    "editForm": {
+      "titleAdd": "担当者の追加",
+      "titleEdit": "担当者の編集",
+      "add": "追加",
+      "save": "保存",
+      "cancel": "キャンセル"
+    },
+    "fields": {
+      "role": "役割",
+      "lastName": "姓",
+      "firstName": "名",
+      "eRadResearcherId": "e-Rad 研究者番号",
+      "orcid": "ORCID",
+      "affiliation": "所属機関",
+      "contact": "連絡先（メールアドレス）",
+      "grdmUserId": "GRDM ユーザー ID"
+    },
+    "sourceBadge": {
+      "manual": "ユーザーによる入力"
+    },
+    "grdmSearch": {
+      "title": "GRDM ユーザーから検索",
+      "label": "姓で検索",
+      "placeholder": "例: 山田",
+      "search": "検索",
+      "searching": "検索中...",
+      "selectResult": "検索結果から選択",
+      "applySelected": "この情報を入力"
+    },
+    "deleteDialog": {
+      "title": "この担当者情報を削除しますか？",
+      "description": "担当者情報を削除すると、関連する研究データ情報も削除されます。",
+      "confirm": "削除する",
+      "cancel": "キャンセル"
+    },
+    "validation": {
+      "required": "{{label}} は必須です",
+      "duplicate": "同じ担当者がすでに登録されています",
+      "uniqueRole": "「{{role}}」はすでに登録されています。一名のみ登録できます。"
+    },
+    "editClose": "閉じる",
+    "editButton": "編集",
+    "deleteButton": "削除"
+  },
+  "dataInfo": {
+    "sectionTitle": "研究データ情報",
+    "colName": "名称",
+    "colField": "分野",
+    "colType": "種別",
+    "addData": "データを追加する",
+    "editForm": {
+      "titleAdd": "管理対象データの追加",
+      "titleEdit": "管理対象データの編集",
+      "add": "追加",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "fetchGrdmMeta": "GRDMメタデータを取得",
+      "fetchGrdmMetaNotFound": "GRDMファイルメタデータが見つかりませんでした"
+    },
+    "fields": {
+      "dataName": "名称",
+      "publicationDate": "掲載日・掲載更新日",
+      "description": "説明",
+      "acquisitionMethod": "データの取得または収集方法",
+      "researchField": "データの分野",
+      "dataType": "データの種別",
+      "dataSize": "概略データ量",
+      "reuseInformation": "再利用を可能にするための情報",
+      "hasSensitiveData": "機密情報の有無",
+      "sensitiveDataPolicy": "機微情報がある場合の取扱い方針",
+      "usagePolicy": "データの利活用・提供方針 (研究活動時)",
+      "repositoryInformation": "リポジトリ情報 (研究活動時)",
+      "backupLocation": "データのバックアップ場所 (研究活動時)",
+      "publicationPolicy": "データの公開・提供方針詳細",
+      "accessRights": "アクセス権",
+      "plannedPublicationDate": "データの公開予定日",
+      "repository": "リポジトリ情報 (リポジトリ URL・DOI リンク) (研究活動後)",
+      "dataCreator": "データの作成者",
+      "dataManagementAgency": "データ管理機関",
+      "rorId": "データ管理機関コード (ROR ID)",
+      "dataManager": "データ管理者 (部署名等)",
+      "dataManagerContact": "データ管理者の連絡先",
+      "dataStorageLocation": "研究データの保存場所 (研究事業終了後)",
+      "dataStoragePeriod": "研究データの保存期間 (研究事業終了後)"
+    },
+    "helperText": {
+      "dataCreator": "これらの選択肢は、担当者情報から生成されます"
+    },
+    "sourceBadge": {
+      "grdm": "GRDMファイルメタデータ",
+      "manual": "ユーザーによる入力"
+    },
+    "rorSearch": {
+      "loading": "検索中...",
+      "noOptions": "候補なし",
+      "typeMoreChars": "2文字以上入力すると候補が表示されます",
+      "fetchFailed": "情報の取得に失敗しました"
+    },
+    "grdmCompare": {
+      "title": "GRDMファイルメタデータとの比較",
+      "description": "採用する項目のチェックボックスを選択してください。",
+      "colItem": "項目",
+      "colCurrent": "現在の値",
+      "colGrdm": "GRDMファイルメタデータ",
+      "colAdopt": "採用",
+      "empty": "（空）",
+      "applyAll": "GRDMファイルメタデータを全て反映させる",
+      "applySelected": "選択した項目を反映させる",
+      "close": "閉じる"
+    },
+    "linkedFiles": {
+      "dialogTitle": "関連付けられた GRDM ファイル",
+      "description1": "この研究データ情報に関連付けられた GRDM ファイルは以下の通りです。",
+      "description2": "新たに GRDM ファイルを関連付ける場合は、ファイルツリーからファイルを選択してください。",
+      "totalSize": "データセットの総データサイズ: ",
+      "colProjectName": "プロジェクト名",
+      "colFilePath": "ファイルパス",
+      "colSize": "サイズ",
+      "colCreatedAt": "作成日",
+      "colUpdatedAt": "最終更新日",
+      "unlink": "関連付け解除",
+      "close": "閉じる"
+    },
+    "deleteDialog": {
+      "title": "この研究データ情報を削除しますか？",
+      "description": "研究データ情報を削除すると、GRDM File との関連付けも解除されます。",
+      "confirm": "削除する",
+      "cancel": "キャンセル"
+    },
+    "validation": {
+      "required": "{{label}} は必須です",
+      "plannedPublicationDateRequired": "アクセス権が「公開期間猶予」の場合、公開予定日を入力してください"
+    },
+    "editClose": "閉じる",
+    "editButton": "編集",
+    "deleteButton": "削除",
+    "linkedFilesButton": "関連ファイル"
+  },
+  "projectTableSection": {
+    "sectionTitle": "DMP と GRDM との関連付け",
+    "description1": "DMP Project と GRDM Project との関連付けを行います。",
+    "description2": "あなたの GRDM アカウント上の GRDM Project 一覧です。",
+    "searchPlaceholder": "プロジェクト名で検索",
+    "colProjectName": "プロジェクト名",
+    "colCreatedAt": "作成日",
+    "colUpdatedAt": "最終更新日",
+    "loading": "GRDM プロジェクトを取得中です。",
+    "noMatch": "一致するプロジェクトがありません。",
+    "link": "関連付ける",
+    "unlink": "関連付け解除",
+    "grdmMeta": {
+      "loading": "GRDM 登録情報を取得中...",
+      "error": "GRDM 登録情報の取得に失敗しました。",
+      "none": "GRDM 登録情報はありません。",
+      "funder": "助成機関",
+      "programName": "プログラム名",
+      "projectName": "プロジェクト名",
+      "grantNumber": "課題番号",
+      "fundingStreamCode": "助成区分"
+    },
+    "unlinkConfirmDialog": {
+      "title": "DMP と GRDM との関連付けの解除",
+      "description1": "この GRDM プロジェクト内のファイルが、DMP の研究データ情報にリンクされています。",
+      "description2": "関連付けを解除すると、これらのリンクは削除されます。",
+      "description3": "本当に関連付けを解除しますか？",
+      "confirm": "解除する",
+      "cancel": "キャンセル"
+    }
+  },
+  "fileTree": {
+    "sectionTitle": "研究データと GRDM file の関連付け",
+    "description": "DMP 上で作成した研究データと GRDM Project 上の file との関連付けを行います。",
+    "noLinkedProjects": "関連付けられた GRDM Project がありません。",
+    "loadError": "読み込みエラーが発生しました",
+    "retry": "再試行",
+    "link": "関連付ける",
+    "unlink": "関連付け解除",
+    "folderHelp": "フォルダ以下の全てのファイルの関連付けと関連付け解除が可能です。",
+    "colName": "名称",
+    "colField": "分野",
+    "colType": "種別",
+    "selectDataDialog": {
+      "title": "関連付ける DMP 研究データの選択",
+      "descriptionSuffix": " を関連付ける DMP 研究データを選択してください。",
+      "cancel": "キャンセル",
+      "linking": "関連付け中",
+      "linkButton": "関連付ける"
+    }
+  },
+  "enums": {
+    "revisionType": {
+      "新規": "新規",
+      "修正": "修正",
+      "更新": "更新"
+    },
+    "researchPhases": {
+      "計画時": "計画時",
+      "研究中": "研究中",
+      "報告時": "報告時"
+    },
+    "personRole": {
+      "研究代表者": "研究代表者",
+      "研究分担者": "研究分担者",
+      "管理対象データの作成者": "管理対象データの作成者",
+      "管理対象データの管理責任者": "管理対象データの管理責任者"
+    },
+    "researchField": {
+      "ライフサイエンス": "ライフサイエンス",
+      "情報通信": "情報通信",
+      "環境": "環境",
+      "ナノテク・材料": "ナノテク・材料",
+      "エネルギー": "エネルギー",
+      "ものづくり技術": "ものづくり技術",
+      "社会基盤": "社会基盤",
+      "フロンティア": "フロンティア",
+      "人文・社会": "人文・社会",
+      "自然科学一般": "自然科学一般",
+      "その他": "その他"
+    },
+    "dataType": {
+      "データセット": "データセット",
+      "集計データ": "集計データ",
+      "臨床試験データ": "臨床試験データ",
+      "編集データ": "編集データ",
+      "符号化データ": "符号化データ",
+      "実験データ": "実験データ",
+      "ゲノムデータ": "ゲノムデータ",
+      "地理空間データ": "地理空間データ",
+      "実験ノート": "実験ノート",
+      "測定・評価データ": "測定・評価データ",
+      "観測データ": "観測データ",
+      "記録データ": "記録データ",
+      "シミュレーションデータ": "シミュレーションデータ",
+      "調査データ": "調査データ"
+    },
+    "hasSensitiveData": {
+      "有": "有",
+      "無": "無"
+    },
+    "accessRights": {
+      "公開": "公開",
+      "共有": "共有",
+      "非共有・非公開": "非共有・非公開",
+      "公開期間猶予": "公開期間猶予"
+    }
+  }
+}

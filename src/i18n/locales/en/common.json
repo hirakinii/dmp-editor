@@ -1,0 +1,13 @@
+{
+  "header": {
+    "goToGrdmProfile": "Go to GRDM Profile",
+    "copyAccessToken": "Copy Access Token",
+    "copied": "Copied!",
+    "signOut": "Sign Out",
+    "signedOut": "Signed out."
+  },
+  "language": {
+    "ja": "日本語",
+    "en": "English"
+  }
+}
