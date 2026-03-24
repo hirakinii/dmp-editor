@@ -6,9 +6,9 @@ import EditOutlined from "@mui/icons-material/EditOutlined"
 import ExpandLessOutlined from "@mui/icons-material/ExpandLessOutlined"
 import SearchIcon from "@mui/icons-material/Search"
 import {
-  Box, Button, CircularProgress, Chip, Collapse, Dialog, DialogActions, DialogContent,
-  DialogTitle, FormControl, FormHelperText, MenuItem, Paper, Select, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow, TextField, Typography, colors,
+  Box, Button, Checkbox, CircularProgress, Chip, Collapse, Dialog, DialogActions, DialogContent,
+  DialogTitle, FormControl, FormControlLabel, FormGroup, FormHelperText, MenuItem, Paper, Select,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, colors,
 } from "@mui/material"
 import { SxProps } from "@mui/system"
 import React, { useState } from "react"
@@ -36,6 +36,7 @@ interface FieldConfig {
   type: "text" | "date" | "select"
   options?: string[]
   selectMultiple?: boolean
+  checkboxGroup?: boolean
   helperText?: string
   helpChip?: React.ReactNode
 }
@@ -45,7 +46,7 @@ interface FieldConfig {
 // ============================================================
 
 const fieldConfigs: FieldConfig[] = [
-  { key: "role", labelKey: "personInfo.fields.role", required: true, type: "select", options: [...personRole], selectMultiple: true },
+  { key: "role", labelKey: "personInfo.fields.role", required: true, type: "select", options: [...personRole], checkboxGroup: true },
   { key: "lastName", labelKey: "personInfo.fields.lastName", required: true, type: "text" },
   { key: "firstName", labelKey: "personInfo.fields.firstName", required: true, type: "text" },
   { key: "eRadResearcherId", labelKey: "personInfo.fields.eRadResearcherId", required: false, type: "text" },
@@ -261,7 +262,7 @@ function PersonInfoForm({ index, totalCount, onSubmit, onClose }: PersonInfoForm
 
         {/* Form fields */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          {fieldConfigs.map(({ key, labelKey, required, helperText, type, options, selectMultiple, helpChip }) => {
+          {fieldConfigs.map(({ key, labelKey, required, helperText, type, options, selectMultiple, checkboxGroup, helpChip }) => {
             const label = t(labelKey)
             return (
               <Controller
@@ -278,7 +279,34 @@ function PersonInfoForm({ index, totalCount, onSubmit, onClose }: PersonInfoForm
                         {helpChip && <HelpChip text={helpChip} />}
                         <SourceBadge source={source} />
                       </Box>
-                      {!selectMultiple ? (
+                      {checkboxGroup ? (
+                        <>
+                          <FormGroup row sx={{ gap: "0.25rem" }}>
+                            {options!.map((option) => (
+                              <FormControlLabel
+                                key={option}
+                                label={t(`enums.personRole.${option}`)}
+                                control={
+                                  <Checkbox
+                                    size="small"
+                                    checked={((field.value as string[]) ?? []).includes(option)}
+                                    onChange={(e) => {
+                                      const current = (field.value as string[]) ?? []
+                                      const newValue = e.target.checked
+                                        ? [...current, option]
+                                        : current.filter((v) => v !== option)
+                                      field.onChange(newValue)
+                                      const currentSource = dialogMethods.getValues("source") ?? {}
+                                      dialogMethods.setValue("source", { ...currentSource, [key]: "manual" } as never)
+                                    }}
+                                  />
+                                }
+                              />
+                            ))}
+                          </FormGroup>
+                          <FormHelperText error={!!error} children={error?.message ?? helperText} />
+                        </>
+                      ) : !selectMultiple ? (
                         <TextField
                           {...field}
                           fullWidth

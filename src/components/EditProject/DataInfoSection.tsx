@@ -50,11 +50,13 @@ import {
 } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 
+import GrdmSelectModal from "@/components/EditProject/GrdmSelectModal"
+import { mapAccessRights, mapDataType, mapResearchField } from "@/components/EditProject/grdmValueMappers"
 import HelpChip from "@/components/EditProject/HelpChip"
 import OurFormLabel from "@/components/EditProject/OurFormLabel"
 import SectionHeader from "@/components/EditProject/SectionHeader"
 import { accessRights, dataType, hasSensitiveData, initDataInfo, researchField } from "@/dmp"
-import type { DataInfo, DataInfoSource, DmpFormValues, ResearchPhase, ValueSource } from "@/dmp"
+import type { DataInfo, DataInfoSource, DmpFormValues, LinkedGrdmProject, ResearchPhase, ValueSource } from "@/dmp"
 import { formatDateToTimezone, ProjectInfo } from "@/grdmClient"
 import { useGrdmFileItemMetadata } from "@/hooks/useGrdmFileItemMetadata"
 import type { RorOrganization } from "@/hooks/useRorSearch"
@@ -119,16 +121,18 @@ interface GrdmFieldMapping {
   dataInfoKey: keyof DataInfo
   grdmKey: keyof GrdmFileMetadataSchema
   labelKey: string
+  transform?: (value: string) => string | null
 }
 
 const GRDM_FIELD_MAP: GrdmFieldMapping[] = [
   { dataInfoKey: "dataName", grdmKey: "grdm-file:title-ja", labelKey: "dataInfo.fields.dataName" },
   { dataInfoKey: "publicationDate", grdmKey: "grdm-file:date-issued-updated", labelKey: "dataInfo.fields.publicationDate" },
   { dataInfoKey: "description", grdmKey: "grdm-file:data-description-ja", labelKey: "dataInfo.fields.description" },
-  { dataInfoKey: "researchField", grdmKey: "grdm-file:data-research-field", labelKey: "dataInfo.fields.researchField" },
-  { dataInfoKey: "dataType", grdmKey: "grdm-file:data-type", labelKey: "dataInfo.fields.dataType" },
+  { dataInfoKey: "researchField", grdmKey: "grdm-file:data-research-field", labelKey: "dataInfo.fields.researchField", transform: mapResearchField },
+  { dataInfoKey: "dataType", grdmKey: "grdm-file:data-type", labelKey: "dataInfo.fields.dataType", transform: mapDataType },
   { dataInfoKey: "dataSize", grdmKey: "grdm-file:file-size", labelKey: "dataInfo.fields.dataSize" },
-  { dataInfoKey: "accessRights", grdmKey: "grdm-file:access-rights", labelKey: "dataInfo.fields.accessRights" },
+  { dataInfoKey: "usagePolicy", grdmKey: "grdm-file:data-policy-cite-ja", labelKey: "dataInfo.fields.usagePolicy" },
+  { dataInfoKey: "accessRights", grdmKey: "grdm-file:access-rights", labelKey: "dataInfo.fields.accessRights", transform: mapAccessRights },
   { dataInfoKey: "plannedPublicationDate", grdmKey: "grdm-file:available-date", labelKey: "dataInfo.fields.plannedPublicationDate" },
   { dataInfoKey: "repositoryInformation", grdmKey: "grdm-file:repo-information-ja", labelKey: "dataInfo.fields.repositoryInformation" },
   { dataInfoKey: "repository", grdmKey: "grdm-file:repo-url-doi-link", labelKey: "dataInfo.fields.repository" },
@@ -305,12 +309,11 @@ interface GrdmCompareModalProps {
 
 function GrdmCompareModal({ open, onClose, fileItem, getCurrentValue, onApply }: GrdmCompareModalProps) {
   const { t } = useTranslation("editProject")
-  const mappedFields = GRDM_FIELD_MAP.map((m) => ({
-    ...m,
-    label: t(m.labelKey),
-    currentValue: getCurrentValue(m.dataInfoKey),
-    grdmValue: getGrdmFieldValue(fileItem, m.grdmKey),
-  })).filter((f) => f.grdmValue !== null)
+  const mappedFields = GRDM_FIELD_MAP.map((m) => {
+    const rawValue = getGrdmFieldValue(fileItem, m.grdmKey)
+    const grdmValue = rawValue !== null && m.transform ? m.transform(rawValue) : rawValue
+    return { ...m, label: t(m.labelKey), currentValue: getCurrentValue(m.dataInfoKey), grdmValue }
+  }).filter((f) => f.grdmValue !== null)
 
   const [selectedKeys, setSelectedKeys] = useState<Set<keyof DataInfo>>(new Set())
 
@@ -426,9 +429,11 @@ interface DataInfoFormProps {
   onClose: () => void
   researchPhase: ResearchPhase
   personNames: string[]
+  projects: ProjectInfo[]
+  linkedProjectIds: string[]
 }
 
-function DataInfoForm({ index, totalCount, onSubmit, onClose, researchPhase, personNames }: DataInfoFormProps) {
+function DataInfoForm({ index, totalCount, onSubmit, onClose, researchPhase, personNames, projects, linkedProjectIds }: DataInfoFormProps) {
   const { t } = useTranslation("editProject")
   const dialogMethods = useForm<DataInfo>({
     defaultValues: initDataInfo(),
@@ -466,6 +471,7 @@ function DataInfoForm({ index, totalCount, onSubmit, onClose, researchPhase, per
   } = useGrdmFileItemMetadata(firstLinkedFile?.projectId, firstLinkedFile?.materialized_path)
 
   const [compareOpen, setCompareOpen] = useState(false)
+  const [grdmSelectOpen, setGrdmSelectOpen] = useState(false)
 
   const handleGrdmFetch = async () => {
     const result = await refetchGrdm()
@@ -589,15 +595,36 @@ function DataInfoForm({ index, totalCount, onSubmit, onClose, researchPhase, per
           {isAddMode ? t("dataInfo.editForm.titleAdd") : t("dataInfo.editForm.titleEdit")}
         </Typography>
 
+        {/* GRDM action buttons row — above the dataName field */}
+        <Box sx={{ display: "flex", flexDirection: "row", gap: "1rem", mb: "1rem" }}>
+          <Button
+            size="small"
+            variant="outlined"
+            color="primary"
+            startIcon={<AddLinkOutlined />}
+            onClick={() => setGrdmSelectOpen(true)}
+            disabled={linkedProjectIds.length === 0}
+            sx={{ textTransform: "none", whiteSpace: "nowrap" }}
+            children={t("dataInfo.editForm.selectGrdmData")}
+          />
+          <Button
+            size="small"
+            variant="outlined"
+            color="info"
+            startIcon={isGrdmFetching ? <CircularProgress size={14} /> : <CloudDownloadOutlined />}
+            onClick={handleGrdmFetch}
+            disabled={!firstLinkedFile || isGrdmFetching}
+            sx={{ textTransform: "none", whiteSpace: "nowrap" }}
+            children={t("dataInfo.editForm.fetchGrdmMeta")}
+          />
+        </Box>
+
         {/* Form fields */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           {formData.map(({ key, labelKey, required: staticRequired, helperText, placeholderKey, type, selectMultiple, helpChipKey, minRows }) => {
             const label = t(labelKey)
             const effectiveRequired = getEffectiveRequired(key, staticRequired)
             const fieldSource = getFieldSource(key)
-
-            // Special header area for dataName: shows GRDM fetch button alongside
-            const isDataNameField = key === "dataName"
 
             // Render the data management agency field with ROR API autocomplete
             if (key === "dataManagementAgency") {
@@ -628,18 +655,6 @@ function DataInfoForm({ index, totalCount, onSubmit, onClose, researchPhase, per
                       <OurFormLabel label={label} required={effectiveRequired} />
                       {buildHelpChip(helpChipKey) && <HelpChip text={buildHelpChip(helpChipKey)!} />}
                       <SourceBadge source={fieldSource} />
-                      {isDataNameField && (
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="info"
-                          startIcon={isGrdmFetching ? <CircularProgress size={14} /> : <CloudDownloadOutlined />}
-                          onClick={handleGrdmFetch}
-                          disabled={!firstLinkedFile || isGrdmFetching}
-                          sx={{ ml: "auto", textTransform: "none", whiteSpace: "nowrap" }}
-                          children={t("dataInfo.editForm.fetchGrdmMeta")}
-                        />
-                      )}
                     </Box>
                     {!selectMultiple ? (
                       <TextField
@@ -737,6 +752,18 @@ function DataInfoForm({ index, totalCount, onSubmit, onClose, researchPhase, per
           onApply={handleGrdmApply}
         />
       )}
+
+      {/* GRDM select modal */}
+      <GrdmSelectModal
+        open={grdmSelectOpen}
+        onClose={() => setGrdmSelectOpen(false)}
+        projects={projects}
+        linkedProjectIds={linkedProjectIds}
+        linkedFiles={dialogMethods.watch("linkedGrdmFiles") ?? []}
+        onLinkedFilesChange={(files) => {
+          dialogMethods.setValue("linkedGrdmFiles", files, { shouldDirty: true })
+        }}
+      />
     </FormProvider>
   )
 }
@@ -771,6 +798,12 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
 
   const personInfo = useWatch({ control, name: "dmp.personInfo" })
   const personNames = personInfo.map((person) => `${person.lastName} ${person.firstName}`.trim())
+
+  const linkedGrdmProjects = useWatch<DmpFormValues>({
+    name: "dmp.linkedGrdmProjects",
+    defaultValue: [],
+  }) as LinkedGrdmProject[]
+  const linkedProjectIds = linkedGrdmProjects.map((p) => p.projectId)
 
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
@@ -984,6 +1017,8 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
                         onClose={handleClose}
                         researchPhase={researchPhase}
                         personNames={personNames}
+                        projects={projects}
+                        linkedProjectIds={linkedProjectIds}
                       />
                     </Collapse>
                   </TableCell>
@@ -1002,6 +1037,8 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
                     onClose={handleClose}
                     researchPhase={researchPhase}
                     personNames={personNames}
+                    projects={projects}
+                    linkedProjectIds={linkedProjectIds}
                   />
                 </Collapse>
               </TableCell>
