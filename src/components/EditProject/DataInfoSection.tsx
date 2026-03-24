@@ -141,7 +141,8 @@ const GRDM_FIELD_MAP: GrdmFieldMapping[] = [
 const getGrdmFieldValue = (fileItem: GrdmFileItem, grdmKey: keyof GrdmFileMetadataSchema): string | null => {
   const activeSchema = fileItem.items.find((s) => s.active)
   if (!activeSchema) return null
-  const field = activeSchema[grdmKey] as { value?: unknown } | undefined
+  const schemaData = (activeSchema as Record<string, unknown>)["data"] as Record<string, { value?: unknown }> | undefined
+  const field = schemaData?.[grdmKey as string]
   if (!field?.value) return null
   return String(field.value)
 }
