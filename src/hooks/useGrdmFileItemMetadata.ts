@@ -43,6 +43,7 @@ export const useGrdmFileItemMetadata = (
 
       const data: GrdmFileMetadataResponse = await response.json() as GrdmFileMetadataResponse
       const files: GrdmFileItem[] = data?.data?.attributes?.files ?? []
+      console.log(files)
       // GrdmFileItem.path has no leading slash (e.g. "osfstorage/file.csv"),
       // while materialized_path from the OSF v2 API includes one (e.g. "/osfstorage/file.csv").
       // Strip the leading slash before comparing.

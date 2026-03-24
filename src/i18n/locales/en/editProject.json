@@ -159,6 +159,7 @@
       "add": "Add",
       "save": "Save",
       "cancel": "Cancel",
+      "selectGrdmData": "Select Data from GRDM",
       "fetchGrdmMeta": "Fetch GRDM Metadata",
       "fetchGrdmMetaNotFound": "GRDM file metadata not found."
     },
@@ -200,6 +201,11 @@
       "noOptions": "No results",
       "typeMoreChars": "Type 2 or more characters to see suggestions.",
       "fetchFailed": "Failed to fetch information."
+    },
+    "grdmSelectModal": {
+      "description": "Select files or folders from the GRDM projects linked to this DMP.",
+      "linkedCount": "Linked: {{count}} file(s)",
+      "close": "Close"
     },
     "grdmCompare": {
       "title": "Compare with GRDM File Metadata",

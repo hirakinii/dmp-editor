@@ -159,6 +159,7 @@
       "add": "追加",
       "save": "保存",
       "cancel": "キャンセル",
+      "selectGrdmData": "GRDMからデータを選択",
       "fetchGrdmMeta": "GRDMメタデータを取得",
       "fetchGrdmMetaNotFound": "GRDMファイルメタデータが見つかりませんでした"
     },
@@ -200,6 +201,11 @@
       "noOptions": "候補なし",
       "typeMoreChars": "2文字以上入力すると候補が表示されます",
       "fetchFailed": "情報の取得に失敗しました"
+    },
+    "grdmSelectModal": {
+      "description": "DMP にリンクされた GRDM プロジェクトのファイルまたはフォルダを選択してください。",
+      "linkedCount": "リンク済み: {{count}} ファイル",
+      "close": "閉じる"
     },
     "grdmCompare": {
       "title": "GRDMファイルメタデータとの比較",
