@@ -14,6 +14,7 @@ import OurFormLabel from "@/components/EditProject/OurFormLabel"
 import SectionHeader from "@/components/EditProject/SectionHeader"
 import type { PersonInfo, ProjectInfo, DmpFormValues } from "@/dmp"
 import { useKakenProject } from "@/hooks/useKakenProject"
+import type { KakenSearchResult } from "@/hooks/useKakenProject"
 import { useSnackbar } from "@/hooks/useSnackbar"
 
 interface FormDataConfig {
@@ -42,6 +43,101 @@ const NISTEP_URL = "https://www.nistep.go.jp/taikei"
 
 interface ProjectInfoSectionProps {
   sx?: SxProps
+}
+
+// ============================================================
+// KakenConfirmDialog
+// Shows search result and asks user to confirm before auto-filling
+// ============================================================
+
+export interface KakenConfirmDialogProps {
+  open: boolean
+  kakenNumber: string
+  result: KakenSearchResult
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+export function KakenConfirmDialog({
+  open,
+  kakenNumber,
+  result,
+  onConfirm,
+  onCancel,
+}: KakenConfirmDialogProps) {
+  const { t } = useTranslation("editProject")
+  const { projectInfo, personInfos } = result
+
+  return (
+    <Dialog open={open} onClose={onCancel} fullWidth maxWidth="sm" closeAfterTransition={false}>
+      <DialogTitle sx={{ mt: "0.5rem", mx: "1rem" }}>
+        {t("projectInfo.kakenSearch.confirmDialog.title")}
+      </DialogTitle>
+      <DialogContent sx={{ mx: "1rem", mt: "0.5rem" }}>
+        <Table size="small">
+          <TableBody>
+            <TableRow>
+              <TableCell sx={{ fontWeight: "bold", width: "40%" }}>
+                {t("projectInfo.kakenSearch.confirmDialog.kakenNumber")}
+              </TableCell>
+              <TableCell>{kakenNumber}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell sx={{ fontWeight: "bold" }}>
+                {t("projectInfo.kakenSearch.confirmDialog.programName")}
+              </TableCell>
+              <TableCell>{projectInfo.programName ?? ""}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell sx={{ fontWeight: "bold" }}>
+                {t("projectInfo.kakenSearch.confirmDialog.projectName")}
+              </TableCell>
+              <TableCell>{projectInfo.projectName ?? ""}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell sx={{ fontWeight: "bold" }}>
+                {t("projectInfo.kakenSearch.confirmDialog.adoptionYear")}
+              </TableCell>
+              <TableCell>{projectInfo.adoptionYear ?? ""}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell sx={{ fontWeight: "bold", verticalAlign: "top" }}>
+                {t("projectInfo.kakenSearch.confirmDialog.persons")}
+              </TableCell>
+              <TableCell>
+                {personInfos.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary">
+                    {t("projectInfo.kakenSearch.confirmDialog.noPersons")}
+                  </Typography>
+                ) : (
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                    {personInfos.map((p, i) => (
+                      <Typography key={i} variant="body2">
+                        {`${p.lastName} ${p.firstName}`}
+                        {p.role.length > 0 && (
+                          <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                            {`(${p.role.map((r) => t(`enums.personRole.${r}`)).join(", ")})`}
+                          </Typography>
+                        )}
+                      </Typography>
+                    ))}
+                  </Box>
+                )}
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </DialogContent>
+      <DialogActions sx={{ m: "0.5rem 1.5rem 1.5rem" }}>
+        <Button variant="contained" color="secondary" onClick={onConfirm}>
+          {t("projectInfo.kakenSearch.confirmDialog.yes")}
+        </Button>
+        <Button variant="outlined" color="secondary" onClick={onCancel}>
+          {t("projectInfo.kakenSearch.confirmDialog.no")}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  )
 }
 
 // ============================================================
@@ -149,6 +245,10 @@ function KakenSearchPanel() {
   const { refetch, isFetching } = useKakenProject(kakenNumber)
   const { showSnackbar } = useSnackbar()
 
+  // Confirm dialog state
+  const [pendingKakenResult, setPendingKakenResult] = useState<KakenSearchResult | null>(null)
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
+
   // Duplicate dialog state
   const [duplicateEntries, setDuplicateEntries] = useState<DuplicateEntry[]>([])
   const [pendingPersonInfos, setPendingPersonInfos] = useState<PersonInfo[]>([])
@@ -158,54 +258,68 @@ function KakenSearchPanel() {
     if (!kakenNumber.trim()) return
     const result = await refetch()
     if (result.isSuccess && result.data) {
-      const { projectInfo: info, personInfos: kakenPersons } = result.data
-
-      // Fill project info fields
-      setValue("dmp.projectInfo.fundingAgency", info.fundingAgency)
-      setValue("dmp.projectInfo.programName", info.programName)
-      setValue("dmp.projectInfo.programCode", info.programCode)
-      setValue("dmp.projectInfo.projectCode", info.projectCode)
-      setValue("dmp.projectInfo.projectName", info.projectName)
-      setValue("dmp.projectInfo.adoptionYear", info.adoptionYear)
-      setValue("dmp.projectInfo.startYear", info.startYear)
-      setValue("dmp.projectInfo.endYear", info.endYear)
-
-      // Process KAKEN members
-      if (kakenPersons.length > 0) {
-        const duplicates: DuplicateEntry[] = []
-        const toAppend: PersonInfo[] = []
-
-        for (const kp of kakenPersons) {
-          const existingIndex = personInfos.findIndex(
-            (p) => p.lastName === kp.lastName && p.firstName === kp.firstName,
-          )
-          if (existingIndex >= 0) {
-            duplicates.push({ kakenPerson: kp, existingIndex })
-          } else {
-            toAppend.push(kp)
-          }
-        }
-
-        // Append non-duplicate persons immediately
-        for (const p of toAppend) {
-          append(p)
-        }
-
-        if (duplicates.length > 0) {
-          setPendingPersonInfos(toAppend)
-          setDuplicateEntries(duplicates)
-          setDuplicateDialogOpen(true)
-        } else {
-          showSnackbar(t("projectInfo.kakenSearch.addedPersons", { count: toAppend.length }), "success")
-        }
-      } else {
-        showSnackbar(t("projectInfo.kakenSearch.autocompleted"), "success")
-      }
+      setPendingKakenResult(result.data)
+      setConfirmDialogOpen(true)
     } else if (result.isSuccess && result.data === null) {
       showSnackbar(t("projectInfo.kakenSearch.notFound"), "warning")
     } else if (result.isError) {
       showSnackbar(t("projectInfo.kakenSearch.fetchFailed"), "error")
     }
+  }
+
+  const handleConfirmApply = () => {
+    if (!pendingKakenResult) return
+    const { projectInfo: info, personInfos: kakenPersons } = pendingKakenResult
+
+    setConfirmDialogOpen(false)
+    setPendingKakenResult(null)
+
+    // Fill project info fields
+    setValue("dmp.projectInfo.fundingAgency", info.fundingAgency)
+    setValue("dmp.projectInfo.programName", info.programName)
+    setValue("dmp.projectInfo.programCode", info.programCode)
+    setValue("dmp.projectInfo.projectCode", info.projectCode)
+    setValue("dmp.projectInfo.projectName", info.projectName)
+    setValue("dmp.projectInfo.adoptionYear", info.adoptionYear)
+    setValue("dmp.projectInfo.startYear", info.startYear)
+    setValue("dmp.projectInfo.endYear", info.endYear)
+
+    // Process KAKEN members
+    if (kakenPersons.length > 0) {
+      const duplicates: DuplicateEntry[] = []
+      const toAppend: PersonInfo[] = []
+
+      for (const kp of kakenPersons) {
+        const existingIndex = personInfos.findIndex(
+          (p) => p.lastName === kp.lastName && p.firstName === kp.firstName,
+        )
+        if (existingIndex >= 0) {
+          duplicates.push({ kakenPerson: kp, existingIndex })
+        } else {
+          toAppend.push(kp)
+        }
+      }
+
+      // Append non-duplicate persons immediately
+      for (const p of toAppend) {
+        append(p)
+      }
+
+      if (duplicates.length > 0) {
+        setPendingPersonInfos(toAppend)
+        setDuplicateEntries(duplicates)
+        setDuplicateDialogOpen(true)
+      } else {
+        showSnackbar(t("projectInfo.kakenSearch.addedPersons", { count: toAppend.length }), "success")
+      }
+    } else {
+      showSnackbar(t("projectInfo.kakenSearch.autocompleted"), "success")
+    }
+  }
+
+  const handleConfirmCancel = () => {
+    setConfirmDialogOpen(false)
+    setPendingKakenResult(null)
   }
 
   const handleDuplicateSkipAll = () => {
@@ -260,6 +374,16 @@ function KakenSearchPanel() {
           </Button>
         </Box>
       </Box>
+
+      {pendingKakenResult && (
+        <KakenConfirmDialog
+          open={confirmDialogOpen}
+          kakenNumber={kakenNumber}
+          result={pendingKakenResult}
+          onConfirm={handleConfirmApply}
+          onCancel={handleConfirmCancel}
+        />
+      )}
 
       <DuplicatePersonDialog
         open={duplicateDialogOpen}

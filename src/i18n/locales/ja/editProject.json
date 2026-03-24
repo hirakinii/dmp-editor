@@ -76,7 +76,18 @@
       "skippedPersons": "重複する担当者 {{count}} 名をスキップしました",
       "autocompleted": "プロジェクト情報を自動補完しました",
       "notFound": "KAKEN番号に該当するプロジェクトが見つかりませんでした",
-      "fetchFailed": "情報の取得に失敗しました"
+      "fetchFailed": "情報の取得に失敗しました",
+      "confirmDialog": {
+        "title": "この研究課題情報で自動補完しますか？",
+        "kakenNumber": "KAKEN番号",
+        "programName": "プログラム名",
+        "projectName": "プロジェクト名",
+        "adoptionYear": "採択年度",
+        "persons": "担当者",
+        "noPersons": "（担当者情報なし）",
+        "yes": "はい",
+        "no": "いいえ"
+      }
     },
     "duplicateDialog": {
       "title": "同名の担当者が存在します",

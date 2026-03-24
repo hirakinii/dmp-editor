@@ -76,7 +76,18 @@
       "skippedPersons": "Skipped {{count}} duplicate personnel.",
       "autocompleted": "Project info auto-filled.",
       "notFound": "No project found for this KAKEN number.",
-      "fetchFailed": "Failed to fetch information."
+      "fetchFailed": "Failed to fetch information.",
+      "confirmDialog": {
+        "title": "Auto-complete with this project information?",
+        "kakenNumber": "KAKEN Number",
+        "programName": "Program Name",
+        "projectName": "Project Name",
+        "adoptionYear": "Adoption Year",
+        "persons": "Persons",
+        "noPersons": "(No persons)",
+        "yes": "Yes",
+        "no": "No"
+      }
     },
     "duplicateDialog": {
       "title": "Duplicate personnel found",
