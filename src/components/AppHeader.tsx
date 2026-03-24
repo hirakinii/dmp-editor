@@ -3,8 +3,9 @@ import ArrowDropDownOutlined from "@mui/icons-material/ArrowDropDownOutlined"
 import Check from "@mui/icons-material/Check"
 import FileCopyOutlined from "@mui/icons-material/FileCopyOutlined"
 import LogoutOutlined from "@mui/icons-material/LogoutOutlined"
+import MenuBookOutlined from "@mui/icons-material/MenuBookOutlined"
 import OpenInNew from "@mui/icons-material/OpenInNew"
-import { AppBar, Box, Link, Button, Menu, MenuItem, Select, colors } from "@mui/material"
+import { AppBar, Box, Link, Button, IconButton, Menu, MenuItem, Select, Tooltip, colors } from "@mui/material"
 import { SxProps } from "@mui/system"
 import { useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
@@ -137,6 +138,16 @@ export default function AppHeader({ sx, noAuth }: AppHeaderProps) {
         </Link>
       </Box>
       <Box sx={{ mr: "1.5rem", display: "flex", alignItems: "center", gap: "1rem" }}>
+        <Tooltip title={t("header.manual")}>
+          <IconButton
+            onClick={() => navigate("/manual")}
+            size="small"
+            aria-label={t("header.manual")}
+            sx={{ color: colors.grey[300], "&:hover": { color: "white" } }}
+          >
+            <MenuBookOutlined />
+          </IconButton>
+        </Tooltip>
         <Select
           value={currentLang}
           onChange={(e) => i18n.changeLanguage(e.target.value)}

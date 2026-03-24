@@ -11,6 +11,7 @@ import SnackbarProvider from "@/components/SnackbarProvider"
 import DetailProject from "@/pages/DetailProject"
 import EditProject from "@/pages/EditProject"
 import Home from "@/pages/Home"
+import ManualPage from "@/pages/ManualPage"
 import StatusPage from "@/pages/StatusPage"
 import { queryClient } from "@/queryClient"
 import theme from "@/theme"
@@ -40,6 +41,7 @@ const router = createBrowserRouter(
         { path: "projects/new", element: <EditProject isNew /> },
         { path: "projects/:projectId/detail", element: <DetailProject /> },
         { path: "projects/:projectId", element: <EditProject /> },
+        { path: "manual", element: <ManualPage /> },
         { path: "*", element: <StatusPage type="notfound" /> },
       ],
     },
