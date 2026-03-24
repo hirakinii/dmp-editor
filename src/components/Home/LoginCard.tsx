@@ -17,6 +17,7 @@ import {
 import { SxProps } from "@mui/system"
 import { useState } from "react"
 import { useForm, Controller } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { useSetRecoilState } from "recoil"
 
 import tokenEg1Url from "@/assets/token-eg-1.png"
@@ -36,6 +37,7 @@ interface FormValues {
 }
 
 export default function LoginCard({ sx }: LoginCardProps) {
+  const { t } = useTranslation("home")
   const {
     control,
     handleSubmit,
@@ -54,18 +56,18 @@ export default function LoginCard({ sx }: LoginCardProps) {
       const result = await authenticateGrdm(token)
       if (result) {
         setToken(token)
-        showSnackbar("認証に成功しました。", "success")
+        showSnackbar(t("loginCard.authSuccess"), "success")
       } else {
         setError("token", {
           type: "manual",
-          message: "認証に失敗しました。Token を確認してください。",
+          message: t("loginCard.authFailed"),
         })
       }
     } catch (e) {
       console.error("Failed to authenticate with GRDM", e)
       setError("token", {
         type: "manual",
-        message: "認証中にエラーが発生しました。",
+        message: t("loginCard.authError"),
       })
     }
   }
@@ -73,14 +75,12 @@ export default function LoginCard({ sx }: LoginCardProps) {
   return (
     <OurCard sx={sx}>
       <Typography sx={{ fontSize: "1.5rem" }} component="h1">
-        {"GRDM との接続"}
+        {t("loginCard.title")}
       </Typography>
       <Typography sx={{ mt: "0.5rem" }}>
-        {"GakuNin RDM の Token を取得し、入力してください。"}
+        {t("loginCard.description1")}
         <br />
-        {
-          "この Token は、GakuNin RDM との疎通に用いられ、この Browser の Local Storage のみに保存されます。"
-        }
+        {t("loginCard.description2")}
       </Typography>
       <Box
         component="form"
@@ -96,16 +96,16 @@ export default function LoginCard({ sx }: LoginCardProps) {
           sx={{ flexGrow: 1, maxWidth: "400px" }}
           error={!!errors.token}
         >
-          <InputLabel>{"GRDM Token"}</InputLabel>
+          <InputLabel>{t("loginCard.tokenLabel")}</InputLabel>
           <Controller
             name="token"
             control={control}
-            rules={{ required: "Token を入力してください。" }}
+            rules={{ required: t("loginCard.tokenRequired") }}
             render={({ field }) => (
               <OutlinedInput
                 {...field}
                 type={showToken ? "text" : "password"}
-                label="GRDM Token"
+                label={t("loginCard.tokenLabel")}
                 endAdornment={
                   <InputAdornment position="end">
                     <IconButton
@@ -125,19 +125,19 @@ export default function LoginCard({ sx }: LoginCardProps) {
           <Button
             type="submit"
             variant="contained"
-            sx={{ width: "120px" }}
+            sx={{ width: "160px" }}
             color="secondary"
             disabled={isSubmitting}
             startIcon={<LockOutlined />}
           >
-            {isSubmitting ? "認証中..." : "認証"}
+            {isSubmitting ? t("loginCard.authenticating") : t("loginCard.authenticate")}
           </Button>
         </Box>
       </Box>
       <Divider sx={{ mt: "1.5rem", mb: "1.5rem" }} />
       <Box sx={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
         <Typography>
-          {"Token は、"}
+          {t("loginCard.tokenGuide1")}
           <Link
             href={GRDM_CONFIG.TOKEN_SETTINGS_URL}
             target="_blank"
@@ -145,17 +145,17 @@ export default function LoginCard({ sx }: LoginCardProps) {
           >
             {GRDM_CONFIG.TOKEN_SETTINGS_URL}
           </Link>
-          {" から取得できます。"}
+          {t("loginCard.tokenGuide2")}
           <br />
-          {"また、"}
+          {t("loginCard.tokenGuide3")}
           <Link
             href={GRDM_CONFIG.SUPPORT_URL}
             target="_blank"
             rel="noopener noreferrer"
           >
-            {"パーソナルアクセストークン | GakuNin RDM サポートポータル"}
+            {t("loginCard.tokenGuide4")}
           </Link>
-          {" も参照してください。"}
+          {t("loginCard.tokenGuide5")}
         </Typography>
         <Box
           component="img"

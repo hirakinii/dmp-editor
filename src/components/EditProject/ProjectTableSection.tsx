@@ -6,6 +6,7 @@ import { Box, Button, Link, Typography, TableContainer, Table, TableHead, TableR
 import { SxProps } from "@mui/system"
 import { useState, useRef, useEffect } from "react"
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 
 import SectionHeader from "@/components/EditProject/SectionHeader"
 import { DmpFormValues } from "@/dmp"
@@ -34,6 +35,7 @@ interface ProjectRowProps {
  * per-project without violating the rules of hooks.
  */
 function ProjectRow({ project, user, isLinked, onLink, onUnlinkRequest }: ProjectRowProps) {
+  const { t } = useTranslation("editProject")
   const { data: metaList, isLoading: isMetaLoading, isError: isMetaError } = useGrdmProjectMetadata(
     isLinked ? project.id : null,
   )
@@ -70,7 +72,7 @@ function ProjectRow({ project, user, isLinked, onLink, onUnlinkRequest }: Projec
             startIcon={isLinked ? <LinkOffOutlined /> : <AddLinkOutlined />}
             sx={{ width: "130px" }}
           >
-            {isLinked ? "関連付け解除" : "関連付ける"}
+            {isLinked ? t("projectTableSection.unlink") : t("projectTableSection.link")}
           </Button>
         </TableCell>
       </TableRow>
@@ -84,18 +86,18 @@ function ProjectRow({ project, user, isLinked, onLink, onUnlinkRequest }: Projec
                   <Box sx={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                     <CircularProgress size={14} />
                     <Typography variant="caption" color="text.secondary">
-                      {"GRDM 登録情報を取得中..."}
+                      {t("projectTableSection.grdmMeta.loading")}
                     </Typography>
                   </Box>
                 )}
                 {isMetaError && (
                   <Typography variant="caption" color="error">
-                    {"GRDM 登録情報の取得に失敗しました。"}
+                    {t("projectTableSection.grdmMeta.error")}
                   </Typography>
                 )}
                 {!isMetaLoading && !isMetaError && !grdmMeta && (
                   <Typography variant="caption" color="text.secondary">
-                    {"GRDM 登録情報はありません。"}
+                    {t("projectTableSection.grdmMeta.none")}
                   </Typography>
                 )}
                 {grdmMeta && (
@@ -110,7 +112,7 @@ function ProjectRow({ project, user, isLinked, onLink, onUnlinkRequest }: Projec
                     {grdmMeta.funder && (
                       <>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: "bold" }}>
-                          {"助成機関"}
+                          {t("projectTableSection.grdmMeta.funder")}
                         </Typography>
                         <Typography variant="caption">{grdmMeta.funder}</Typography>
                       </>
@@ -118,7 +120,7 @@ function ProjectRow({ project, user, isLinked, onLink, onUnlinkRequest }: Projec
                     {grdmMeta.programNameJa && (
                       <>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: "bold" }}>
-                          {"プログラム名"}
+                          {t("projectTableSection.grdmMeta.programName")}
                         </Typography>
                         <Typography variant="caption">{grdmMeta.programNameJa}</Typography>
                       </>
@@ -126,7 +128,7 @@ function ProjectRow({ project, user, isLinked, onLink, onUnlinkRequest }: Projec
                     {grdmMeta.projectNameJa && (
                       <>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: "bold" }}>
-                          {"プロジェクト名"}
+                          {t("projectTableSection.grdmMeta.projectName")}
                         </Typography>
                         <Typography variant="caption">{grdmMeta.projectNameJa}</Typography>
                       </>
@@ -134,7 +136,7 @@ function ProjectRow({ project, user, isLinked, onLink, onUnlinkRequest }: Projec
                     {grdmMeta.japanGrantNumber && (
                       <>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: "bold" }}>
-                          {"課題番号"}
+                          {t("projectTableSection.grdmMeta.grantNumber")}
                         </Typography>
                         <Typography variant="caption">{grdmMeta.japanGrantNumber}</Typography>
                       </>
@@ -142,7 +144,7 @@ function ProjectRow({ project, user, isLinked, onLink, onUnlinkRequest }: Projec
                     {grdmMeta.fundingStreamCode && (
                       <>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: "bold" }}>
-                          {"助成区分"}
+                          {t("projectTableSection.grdmMeta.fundingStreamCode")}
                         </Typography>
                         <Typography variant="caption">{grdmMeta.fundingStreamCode}</Typography>
                       </>
@@ -159,6 +161,7 @@ function ProjectRow({ project, user, isLinked, onLink, onUnlinkRequest }: Projec
 }
 
 export default function ProjectTableSection({ sx, user, projects, isLoading = false }: ProjectTableProps) {
+  const { t } = useTranslation("editProject")
   const { control } = useFormContext<DmpFormValues>()
   const { insert, remove } = useFieldArray<DmpFormValues, "dmp.linkedGrdmProjects">({
     control,
@@ -261,15 +264,15 @@ export default function ProjectTableSection({ sx, user, projects, isLoading = fa
 
   return (
     <Box sx={{ ...sx, display: "flex", flexDirection: "column" }}>
-      <SectionHeader text="DMP と GRDM との関連付け" />
+      <SectionHeader text={t("projectTableSection.sectionTitle")} />
       <Typography sx={{ mt: "0.5rem" }}>
-        {"DMP Project と GRDM Project との関連付けを行います。"}
+        {t("projectTableSection.description1")}
         <br />
-        {"あなたの GRDM アカウント上の GRDM Project 一覧です。"}
+        {t("projectTableSection.description2")}
       </Typography>
       <TextField
         size="small"
-        placeholder="プロジェクト名で検索"
+        placeholder={t("projectTableSection.searchPlaceholder")}
         value={searchQuery}
         onChange={(e) => {
           setSearchQuery(e.target.value)
@@ -292,9 +295,9 @@ export default function ProjectTableSection({ sx, user, projects, isLoading = fa
           <Table stickyHeader>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: "bold", textAlign: "left", p: "0.5rem 1rem", width: "40%", backgroundColor: colors.grey[100] }}>{"プロジェクト名"}</TableCell>
-                <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "20%", backgroundColor: colors.grey[100] }}>{"作成日"}</TableCell>
-                <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "20%", backgroundColor: colors.grey[100] }}>{"最終更新日"}</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "left", p: "0.5rem 1rem", width: "40%", backgroundColor: colors.grey[100] }}>{t("projectTableSection.colProjectName")}</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "20%", backgroundColor: colors.grey[100] }}>{t("projectTableSection.colCreatedAt")}</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "20%", backgroundColor: colors.grey[100] }}>{t("projectTableSection.colUpdatedAt")}</TableCell>
                 <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "20%", backgroundColor: colors.grey[100] }} />
               </TableRow>
             </TableHead>
@@ -304,14 +307,14 @@ export default function ProjectTableSection({ sx, user, projects, isLoading = fa
                   <TableCell colSpan={4} sx={{ textAlign: "center", color: "text.secondary", py: "1.5rem" }}>
                     <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
                       <CircularProgress size={14} />
-                      {"GRDM プロジェクトを取得中です。"}
+                      {t("projectTableSection.loading")}
                     </Box>
                   </TableCell>
                 </TableRow>
               ) : displayedProjects.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} sx={{ textAlign: "center", color: "text.secondary", py: "1.5rem" }}>
-                    {"一致するプロジェクトがありません。"}
+                    {t("projectTableSection.noMatch")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -363,17 +366,17 @@ export default function ProjectTableSection({ sx, user, projects, isLoading = fa
         closeAfterTransition={false}
       >
         <DialogTitle sx={{ mt: "0.5rem", mx: "1rem" }}>
-          {"DMP と GRDM との関連付けの解除"}
+          {t("projectTableSection.unlinkConfirmDialog.title")}
         </DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: "1rem", mt: "0.5rem", mx: "1rem" }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             <Typography>
-              {"この GRDM プロジェクト内のファイルが、DMP の研究データ情報にリンクされています。"}
+              {t("projectTableSection.unlinkConfirmDialog.description1")}
               <br />
-              {"関連付けを解除すると、これらのリンクは削除されます。"}
+              {t("projectTableSection.unlinkConfirmDialog.description2")}
               <br />
               <span style={{ fontWeight: "bold" }}>
-                {"本当に関連付けを解除しますか？"}
+                {t("projectTableSection.unlinkConfirmDialog.description3")}
               </span>
             </Typography>
           </Box>
@@ -384,9 +387,9 @@ export default function ProjectTableSection({ sx, user, projects, isLoading = fa
             color="secondary"
             onClick={confirmUnlinkProject}
           >
-            {"解除する"}
+            {t("projectTableSection.unlinkConfirmDialog.confirm")}
           </Button>
-          <Button children="キャンセル" onClick={cancelUnlinkProject} variant="outlined" color="secondary" />
+          <Button children={t("projectTableSection.unlinkConfirmDialog.cancel")} onClick={cancelUnlinkProject} variant="outlined" color="secondary" />
         </DialogActions>
       </Dialog>
     </Box>

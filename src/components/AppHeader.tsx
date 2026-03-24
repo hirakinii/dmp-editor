@@ -4,11 +4,12 @@ import Check from "@mui/icons-material/Check"
 import FileCopyOutlined from "@mui/icons-material/FileCopyOutlined"
 import LogoutOutlined from "@mui/icons-material/LogoutOutlined"
 import OpenInNew from "@mui/icons-material/OpenInNew"
-import { AppBar, Box, Link, Button, Menu, MenuItem, colors } from "@mui/material"
+import { AppBar, Box, Link, Button, Menu, MenuItem, Select, colors } from "@mui/material"
 import { SxProps } from "@mui/system"
 import { useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { useErrorBoundary } from "react-error-boundary"
+import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { useRecoilState } from "recoil"
 
@@ -35,6 +36,7 @@ export default function AppHeader({ sx, noAuth }: AppHeaderProps) {
   const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null)
   const [copied, setCopied] = useState(false)
   const { showSnackbar } = useSnackbar()
+  const { t, i18n } = useTranslation("common")
 
   const handleCopy = () => {
     navigator.clipboard.writeText(token).then(() => {
@@ -46,9 +48,11 @@ export default function AppHeader({ sx, noAuth }: AppHeaderProps) {
   const signOut = () => {
     queryClient.clear()
     setToken("")
-    showSnackbar("サインアウトしました。", "info")
+    showSnackbar(t("header.signedOut"), "info")
     navigate("/")
   }
+
+  const currentLang = i18n.language.startsWith("ja") ? "ja" : "en"
 
   const menuContent = !noAuth && userQuery.data ? (
     <>
@@ -78,24 +82,24 @@ export default function AppHeader({ sx, noAuth }: AppHeaderProps) {
           sx={{ minWidth: "220px" }}
         >
           <OpenInNew sx={{ mr: "0.5rem" }} />
-          {"Go to GRDM Profile"}
+          {t("header.goToGrdmProfile")}
         </MenuItem>
         <MenuItem onClick={handleCopy} sx={{ minWidth: "220px" }}>
           {copied ? (
             <>
               <Check sx={{ mr: "0.5rem" }} />
-              {"Copied!"}
+              {t("header.copied")}
             </>
           ) : (
             <>
               <FileCopyOutlined sx={{ mr: "0.5rem" }} />
-              {"Copy Access Token"}
+              {t("header.copyAccessToken")}
             </>
           )}
         </MenuItem>
         <MenuItem onClick={signOut} sx={{ minWidth: "220px" }}>
           <LogoutOutlined sx={{ mr: "0.5rem" }} />
-          {"Sign Out"}
+          {t("header.signOut")}
         </MenuItem>
       </Menu>
     </>
@@ -132,7 +136,26 @@ export default function AppHeader({ sx, noAuth }: AppHeaderProps) {
           {"DMP editor"}
         </Link>
       </Box>
-      <Box sx={{ mr: "1.5rem" }}>{menuContent}</Box>
+      <Box sx={{ mr: "1.5rem", display: "flex", alignItems: "center", gap: "1rem" }}>
+        <Select
+          value={currentLang}
+          onChange={(e) => i18n.changeLanguage(e.target.value)}
+          size="small"
+          variant="outlined"
+          sx={{
+            color: colors.grey[300],
+            fontSize: "0.85rem",
+            height: "2rem",
+            "& .MuiOutlinedInput-notchedOutline": { borderColor: colors.grey[600] },
+            "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: colors.grey[400] },
+            "& .MuiSvgIcon-root": { color: colors.grey[400] },
+          }}
+        >
+          <MenuItem value="ja">{t("language.ja")}</MenuItem>
+          <MenuItem value="en">{t("language.en")}</MenuItem>
+        </Select>
+        {menuContent}
+      </Box>
     </AppBar>
   )
 }

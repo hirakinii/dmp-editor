@@ -1,43 +1,44 @@
 import { Box, TextField, FormControl, MenuItem } from "@mui/material"
 import { SxProps } from "@mui/system"
 import { useFormContext, Controller } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 
 import OurFormLabel from "@/components/EditProject/OurFormLabel"
 import SectionHeader from "@/components/EditProject/SectionHeader"
 import { DmpFormValues, revisionType } from "@/dmp"
 import type { DmpMetadata } from "@/dmp"
 
-interface FormData {
+interface FormDataConfig {
   key: keyof DmpMetadata
-  label: string
+  labelKey: string
   required: boolean
   width: string
   helperText?: string
   type: "text" | "date" | "select"
-  options?: string[]
+  options?: readonly string[]
   /** When true, the field is displayed but cannot be edited by the user. */
   readOnly?: boolean
 }
 
-const formProps: FormData[] = [
+const formDataConfig: FormDataConfig[] = [
   {
     key: "revisionType",
-    label: "種別",
+    labelKey: "dmpMeta.fields.revisionType",
     required: true,
     width: "480px",
     type: "select",
-    options: [...revisionType],
+    options: revisionType,
   },
   {
     key: "submissionDate",
-    label: "提出日",
+    labelKey: "dmpMeta.fields.submissionDate",
     required: true,
     width: "480px",
     type: "date",
   },
   {
     key: "dateCreated",
-    label: "DMP 作成年月日",
+    labelKey: "dmpMeta.fields.dateCreated",
     required: true,
     width: "480px",
     type: "date",
@@ -51,13 +52,15 @@ interface DmpMetadataSectionProps {
 }
 
 export default function DmpMetadataSection({ sx, isNew = false }: DmpMetadataSectionProps) {
+  const { t } = useTranslation("editProject")
   const { control, getValues } = useFormContext<DmpFormValues>()
 
   return (
     <Box sx={{ ...sx, display: "flex", flexDirection: "column" }}>
-      <SectionHeader text="DMP 作成・更新情報" />
+      <SectionHeader text={t("dmpMeta.section")} />
       <Box sx={{ display: "flex", flexDirection: "column", gap: "1rem", mt: "1rem" }}>
-        {formProps.map(({ key, label, required, width, helperText, type, options, readOnly }) => {
+        {formDataConfig.map(({ key, labelKey, required, width, helperText, type, options, readOnly }) => {
+          const label = t(labelKey)
           // In new-DMP mode, revisionType is fixed to "新規" and must not be editable.
           const isDisabled = readOnly || (isNew && key === "revisionType")
           return (
@@ -68,16 +71,16 @@ export default function DmpMetadataSection({ sx, isNew = false }: DmpMetadataSec
               rules={
                 key === "submissionDate"
                   ? {
-                    required: `${label} は必須です`,
+                    required: t("dmpMeta.validation.required", { label }),
                     validate: (value) => {
                       const dateCreated = getValues("dmp.metadata.dateCreated")
                       if (dateCreated && value && value < dateCreated) {
-                        return "提出日は DMP 作成年月日以降の日付を入力してください"
+                        return t("dmpMeta.validation.submissionDateAfterCreated")
                       }
                     },
                   }
                   : required
-                    ? { required: `${label} は必須です` }
+                    ? { required: t("dmpMeta.validation.required", { label }) }
                     : {}
               }
               render={({ field, fieldState: { error } }) => (
@@ -97,7 +100,9 @@ export default function DmpMetadataSection({ sx, isNew = false }: DmpMetadataSec
                   >
                     {type === "select" &&
                       options!.map((option) => (
-                        <MenuItem key={option} value={option} children={option} />
+                        <MenuItem key={option} value={option}>
+                          {t(`enums.revisionType.${option}`)}
+                        </MenuItem>
                       ))}
                   </TextField>
                 </FormControl>

@@ -1,0 +1,47 @@
+{
+  "pageTitle": "DMP: {{name}}",
+  "editButton": "Edit",
+  "downloadButton": "Export",
+  "downloadingButton": "Exporting...",
+  "grdmTooltip": "Open GRDM Project",
+  "sections": {
+    "dmpInfo": "DMP Creation & Update Info",
+    "projectInfo": "Research Project Info",
+    "personInfo": "Personnel Info",
+    "dataInfo": "Research Data Info"
+  },
+  "dmpMeta": {
+    "dateCreated": "DMP Created",
+    "dateModified": "DMP Last Updated",
+    "researchPhase": "Research Phase",
+    "revisionType": "Type",
+    "submissionDate": "Submission Date"
+  },
+  "projectInfo": {
+    "fundingAgency": "Funding Agency",
+    "programName": "Program Name",
+    "programCode": "Program Code",
+    "projectCode": "Systematic Number",
+    "projectName": "Project Name",
+    "adoptionYear": "Adoption Year",
+    "startYear": "Project Start Year",
+    "endYear": "Project End Year"
+  },
+  "personTable": {
+    "colRole": "Role",
+    "colLastName": "Last Name",
+    "colFirstName": "First Name",
+    "colAffiliation": "Affiliation",
+    "colERadId": "e-Rad Researcher ID",
+    "colOrcid": "ORCID",
+    "colContact": "Contact",
+    "roleSeparator": ", "
+  },
+  "dataTable": {
+    "colDataName": "Data Name",
+    "colField": "Research Field",
+    "colType": "Data Type",
+    "colAccessRights": "Access Rights",
+    "colAgency": "Data Management Agency"
+  }
+}

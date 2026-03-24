@@ -1,0 +1,371 @@
+{
+  "page": {
+    "saving": "Saving to GRDM...",
+    "unsavedDialog": {
+      "title": "You have unsaved changes",
+      "description": "If you leave this page, your changes will be lost. Do you want to continue?",
+      "stay": "Stay on this page",
+      "leave": "Discard changes and leave"
+    }
+  },
+  "formCard": {
+    "titleNew": "Create New DMP Project",
+    "titleEdit": "Edit DMP Project",
+    "steps": {
+      "basicSettings": "Basic Settings",
+      "projectInfo": "Project Info",
+      "personInfo": "Personnel",
+      "dataInfo": "Research Data",
+      "grdmLink": "GRDM Link"
+    },
+    "back": "Back",
+    "next": "Next",
+    "saveToGrdm": "Save to GRDM",
+    "saveDone": "DMP saved.",
+    "saveError": {
+      "prefix": "Failed to save to GRDM",
+      "partialSave": "Failed to save to GRDM: The project name was updated, but saving the DMP file failed. Please try saving again.",
+      "timeout": "Failed to save to GRDM: Timeout"
+    }
+  },
+  "dmpMeta": {
+    "researchPhaseLabel": "Research Phase:",
+    "section": "DMP Creation / Update Info",
+    "fields": {
+      "revisionType": "Type",
+      "submissionDate": "Submission Date",
+      "dateCreated": "DMP Creation Date"
+    },
+    "validation": {
+      "submissionDateAfterCreated": "Submission date must be on or after the DMP creation date.",
+      "required": "{{label}} is required"
+    }
+  },
+  "grdmProject": {
+    "newDescription1": "The DMP will be saved to a newly created GRDM project.",
+    "newDescription2": "The project name will be automatically determined based on the \"Project Name\" entered in Project Info, formatted as ",
+    "newDescription3": "DMP-[Project Name]",
+    "newDescription4": ".",
+    "existingDescription": "This DMP Project is saved in the following GRDM project."
+  },
+  "projectInfo": {
+    "sectionTitle": "Project Info",
+    "fields": {
+      "fundingAgency": "Funding Agency",
+      "programName": "Program Name",
+      "programCode": "Program Code",
+      "projectCode": "System Code",
+      "projectName": "Project Name",
+      "adoptionYear": "Adoption Year",
+      "startYear": "Start Year",
+      "endYear": "End Year"
+    },
+    "helpChip": {
+      "programNamePart1": "See NISTEP Systematic Number List (",
+      "programNamePart2": ") for the \"Program / Scheme Name\".",
+      "programCodePart1": "See NISTEP Systematic Number List (",
+      "programCodePart2": ") for the \"Institution Code\" and \"Policy / Project Identification Code\"."
+    },
+    "kakenSearch": {
+      "label": "Auto-fill from KAKEN number",
+      "placeholder": "e.g. 23K12345",
+      "search": "Search",
+      "searching": "Searching...",
+      "addedPersons": "Added {{count}} personnel.",
+      "addedPersonsWithSkip": "Added {{count}} personnel (skipped {{skip}} duplicates).",
+      "skippedPersons": "Skipped {{count}} duplicate personnel.",
+      "autocompleted": "Project info auto-filled.",
+      "notFound": "No project found for this KAKEN number.",
+      "fetchFailed": "Failed to fetch information."
+    },
+    "duplicateDialog": {
+      "title": "Duplicate personnel found",
+      "description": "The following personnel retrieved from KAKEN are already registered. Please review.",
+      "colItem": "Field",
+      "colExisting": "Existing Info",
+      "colKaken": "KAKEN Info",
+      "rowRole": "Role",
+      "rowAffiliation": "Affiliation",
+      "rowERadId": "e-Rad Researcher ID",
+      "skipAll": "Skip all and close",
+      "cancel": "Cancel"
+    },
+    "validation": {
+      "required": "{{label}} is required"
+    }
+  },
+  "personInfo": {
+    "sectionTitle": "Personnel",
+    "colRole": "Role",
+    "colName": "Name",
+    "colERadId": "e-Rad Researcher ID",
+    "colOrcid": "ORCID",
+    "colAffiliation": "Affiliation",
+    "colContact": "Contact",
+    "addPerson": "Add Personnel",
+    "editForm": {
+      "titleAdd": "Add Personnel",
+      "titleEdit": "Edit Personnel",
+      "add": "Add",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "fields": {
+      "role": "Role",
+      "lastName": "Last Name",
+      "firstName": "First Name",
+      "eRadResearcherId": "e-Rad Researcher ID",
+      "orcid": "ORCID",
+      "affiliation": "Affiliation",
+      "contact": "Contact (Email)",
+      "grdmUserId": "GRDM User ID"
+    },
+    "sourceBadge": {
+      "manual": "User input"
+    },
+    "grdmSearch": {
+      "title": "Search GRDM Users",
+      "label": "Search by last name",
+      "placeholder": "e.g. Yamada",
+      "search": "Search",
+      "searching": "Searching...",
+      "selectResult": "Select from results",
+      "applySelected": "Apply this info"
+    },
+    "deleteDialog": {
+      "title": "Delete this personnel entry?",
+      "description": "Deleting this personnel entry will also remove associated research data entries.",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    },
+    "validation": {
+      "required": "{{label}} is required",
+      "duplicate": "This person is already registered.",
+      "uniqueRole": "\"{{role}}\" is already registered. Only one person can hold this role."
+    },
+    "editClose": "Close",
+    "editButton": "Edit",
+    "deleteButton": "Delete"
+  },
+  "dataInfo": {
+    "sectionTitle": "Research Data",
+    "colName": "Name",
+    "colField": "Field",
+    "colType": "Type",
+    "addData": "Add Data",
+    "editForm": {
+      "titleAdd": "Add Research Data",
+      "titleEdit": "Edit Research Data",
+      "add": "Add",
+      "save": "Save",
+      "cancel": "Cancel",
+      "fetchGrdmMeta": "Fetch GRDM Metadata",
+      "fetchGrdmMetaNotFound": "GRDM file metadata not found."
+    },
+    "fields": {
+      "dataName": "Name",
+      "publicationDate": "Publication / Update Date",
+      "description": "Description",
+      "acquisitionMethod": "Data Acquisition / Collection Method",
+      "researchField": "Research Field",
+      "dataType": "Data Type",
+      "dataSize": "Approximate Data Size",
+      "reuseInformation": "Information for Reuse",
+      "hasSensitiveData": "Contains Sensitive Data",
+      "sensitiveDataPolicy": "Sensitive Data Handling Policy",
+      "usagePolicy": "Data Usage / Provision Policy (during research)",
+      "repositoryInformation": "Repository Info (during research)",
+      "backupLocation": "Backup Location (during research)",
+      "publicationPolicy": "Data Publication / Provision Policy (details)",
+      "accessRights": "Access Rights",
+      "plannedPublicationDate": "Planned Publication Date",
+      "repository": "Repository Info (URL / DOI) (after research)",
+      "dataCreator": "Data Creator",
+      "dataManagementAgency": "Data Management Agency",
+      "rorId": "Data Management Agency Code (ROR ID)",
+      "dataManager": "Data Manager (department, etc.)",
+      "dataManagerContact": "Data Manager Contact",
+      "dataStorageLocation": "Data Storage Location (after research)",
+      "dataStoragePeriod": "Data Retention Period (after research)"
+    },
+    "helperText": {
+      "dataCreator": "These options are generated from the personnel list."
+    },
+    "sourceBadge": {
+      "grdm": "GRDM file metadata",
+      "manual": "User input"
+    },
+    "rorSearch": {
+      "loading": "Searching...",
+      "noOptions": "No results",
+      "typeMoreChars": "Type 2 or more characters to see suggestions.",
+      "fetchFailed": "Failed to fetch information."
+    },
+    "grdmCompare": {
+      "title": "Compare with GRDM File Metadata",
+      "description": "Select checkboxes for the fields you want to apply.",
+      "colItem": "Field",
+      "colCurrent": "Current Value",
+      "colGrdm": "GRDM File Metadata",
+      "colAdopt": "Apply",
+      "empty": "(empty)",
+      "applyAll": "Apply all GRDM file metadata",
+      "applySelected": "Apply selected fields",
+      "close": "Close"
+    },
+    "linkedFiles": {
+      "dialogTitle": "Linked GRDM Files",
+      "description1": "The GRDM files associated with this research data entry are listed below.",
+      "description2": "To link additional GRDM files, select them from the file tree.",
+      "totalSize": "Total dataset size: ",
+      "colProjectName": "Project Name",
+      "colFilePath": "File Path",
+      "colSize": "Size",
+      "colCreatedAt": "Created",
+      "colUpdatedAt": "Last Updated",
+      "unlink": "Unlink",
+      "close": "Close"
+    },
+    "deleteDialog": {
+      "title": "Delete this research data entry?",
+      "description": "Deleting this research data entry will also remove its links to GRDM files.",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    },
+    "validation": {
+      "required": "{{label}} is required",
+      "plannedPublicationDateRequired": "Planned publication date is required when access rights are set to \"Embargo\"."
+    },
+    "placeholders": {
+      "dataName": "e.g., Image data captured in ○○ demonstration",
+      "description": "e.g., Image data captured during ○○ demonstration",
+      "acquisitionMethod": "e.g., Self-acquired via sensor installation, self-acquired via simulation",
+      "dataSize": "e.g., <1GB, 1-10GB, 10-100GB, >100GB",
+      "reuseInformation": "e.g., Codebook available for data items",
+      "sensitiveDataPolicy": "e.g., Personal information will be handled in compliance with applicable laws.",
+      "usagePolicy": "e.g., Data for △△ will be published immediately after acquisition; data for ○○ after a certain period.",
+      "repositoryInformation": "e.g., Stored in the storage of ○○ University (lab) to which the PI belongs",
+      "backupLocation": "e.g., Backed up via the backup service of ○○ University (lab) to which the PI belongs",
+      "publicationPolicy": "e.g., Published immediately after acquisition",
+      "repository": "e.g., ○○ University institutional repository, https://doi.org/10.12345/abcde",
+      "dataManagementAgency": "e.g., ○○ University",
+      "rorId": "e.g., https://ror.org/123456789",
+      "dataManager": "e.g., ×× Promotion Office",
+      "dataManagerContact": "e.g., xxx@xxx, ×× City, 〇〇 Prefecture",
+      "dataStorageLocation": "e.g., ○○ University institutional repository, △△ Research Institute data server",
+      "dataStoragePeriod": "e.g., Permanent storage, 10 years"
+    },
+    "editClose": "Close",
+    "editButton": "Edit",
+    "deleteButton": "Delete",
+    "linkedFilesButton": "Linked Files"
+  },
+  "projectTableSection": {
+    "sectionTitle": "Link DMP with GRDM",
+    "description1": "Link this DMP Project with GRDM Projects.",
+    "description2": "GRDM Projects associated with your account are listed below.",
+    "searchPlaceholder": "Search by project name",
+    "colProjectName": "Project Name",
+    "colCreatedAt": "Created",
+    "colUpdatedAt": "Last Updated",
+    "loading": "Fetching GRDM projects...",
+    "noMatch": "No matching projects.",
+    "link": "Link",
+    "unlink": "Unlink",
+    "grdmMeta": {
+      "loading": "Fetching GRDM registration info...",
+      "error": "Failed to fetch GRDM registration info.",
+      "none": "No GRDM registration info.",
+      "funder": "Funder",
+      "programName": "Program Name",
+      "projectName": "Project Name",
+      "grantNumber": "Grant Number",
+      "fundingStreamCode": "Funding Stream Code"
+    },
+    "unlinkConfirmDialog": {
+      "title": "Unlink DMP from GRDM",
+      "description1": "Files in this GRDM project are linked to research data entries in this DMP.",
+      "description2": "Unlinking will delete these file links.",
+      "description3": "Are you sure you want to unlink?",
+      "confirm": "Unlink",
+      "cancel": "Cancel"
+    }
+  },
+  "fileTree": {
+    "sectionTitle": "Link Research Data with GRDM Files",
+    "description": "Link the research data created in DMP with files in GRDM Projects.",
+    "noLinkedProjects": "No linked GRDM Projects.",
+    "loadError": "A loading error occurred.",
+    "retry": "Retry",
+    "link": "Link",
+    "unlink": "Unlink",
+    "folderHelp": "You can link or unlink all files under this folder.",
+    "colName": "Name",
+    "colField": "Field",
+    "colType": "Type",
+    "selectDataDialog": {
+      "title": "Select DMP Research Data to Link",
+      "descriptionSuffix": " — select DMP research data to link.",
+      "cancel": "Cancel",
+      "linking": "Linking...",
+      "linkButton": "Link"
+    }
+  },
+  "enums": {
+    "revisionType": {
+      "新規": "New",
+      "修正": "Revision",
+      "更新": "Update"
+    },
+    "researchPhases": {
+      "計画時": "Planning",
+      "研究中": "In Progress",
+      "報告時": "Reporting"
+    },
+    "personRole": {
+      "研究代表者": "Principal Investigator",
+      "研究分担者": "Co-Investigator",
+      "管理対象データの作成者": "Data Creator",
+      "管理対象データの管理責任者": "Data Manager"
+    },
+    "researchField": {
+      "ライフサイエンス": "Life Science",
+      "情報通信": "Information & Communications",
+      "環境": "Environment",
+      "ナノテク・材料": "Nanotechnology & Materials",
+      "エネルギー": "Energy",
+      "ものづくり技術": "Manufacturing",
+      "社会基盤": "Social Infrastructure",
+      "フロンティア": "Frontier",
+      "人文・社会": "Humanities & Social Sciences",
+      "自然科学一般": "General Natural Sciences",
+      "その他": "Other"
+    },
+    "dataType": {
+      "データセット": "Dataset",
+      "集計データ": "Aggregate Data",
+      "臨床試験データ": "Clinical Trial Data",
+      "編集データ": "Compiled Data",
+      "符号化データ": "Encoded Data",
+      "実験データ": "Experimental Data",
+      "ゲノムデータ": "Genomic Data",
+      "地理空間データ": "Geospatial Data",
+      "実験ノート": "Lab Notebook",
+      "測定・評価データ": "Measurement & Evaluation Data",
+      "観測データ": "Observational Data",
+      "記録データ": "Record Data",
+      "シミュレーションデータ": "Simulation Data",
+      "調査データ": "Survey Data"
+    },
+    "hasSensitiveData": {
+      "有": "Yes",
+      "無": "No"
+    },
+    "accessRights": {
+      "公開": "Open",
+      "共有": "Restricted",
+      "非共有・非公開": "Closed",
+      "公開期間猶予": "Embargo"
+    }
+  }
+}

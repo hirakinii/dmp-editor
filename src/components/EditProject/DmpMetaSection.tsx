@@ -1,6 +1,7 @@
 import { Box, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material"
 import { SxProps } from "@mui/system"
 import { useFormContext, useWatch } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 
 import DmpMetadataSection from "@/components/EditProject/DmpMetadataSection"
 import GrdmProject from "@/components/EditProject/GrdmProject"
@@ -15,13 +16,14 @@ export interface DmpMetaSectionProps {
 }
 
 export default function DmpMetaSection({ sx, isNew, project }: DmpMetaSectionProps) {
+  const { t } = useTranslation("editProject")
   const { control, setValue } = useFormContext<DmpFormValues>()
   const researchPhase = useWatch({ control, name: "dmp.metadata.researchPhase" }) as ResearchPhase
 
   return (
     <Box sx={sx}>
       <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "1rem" }}>
-        <Typography sx={{ fontSize: "0.9rem", fontWeight: "bold" }}>{"研究フェーズ:"}</Typography>
+        <Typography sx={{ fontSize: "0.9rem", fontWeight: "bold" }}>{t("dmpMeta.researchPhaseLabel")}</Typography>
         <ToggleButtonGroup
           value={researchPhase}
           exclusive
@@ -32,7 +34,7 @@ export default function DmpMetaSection({ sx, isNew, project }: DmpMetaSectionPro
         >
           {researchPhases.map((phase) => (
             <ToggleButton key={phase} value={phase} sx={{ textTransform: "none", px: "1.5rem" }}>
-              {phase}
+              {t(`enums.researchPhases.${phase}`)}
             </ToggleButton>
           ))}
         </ToggleButtonGroup>

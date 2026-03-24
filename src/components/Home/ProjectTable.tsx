@@ -19,6 +19,7 @@ import {
 } from "@mui/material"
 import { SxProps } from "@mui/system"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router"
 import { useRecoilValue } from "recoil"
 
@@ -52,20 +53,21 @@ function triggerDownload(blob: Blob, filename: string): void {
  * Renders table header for ProjectTable
  */
 function ProjectTableHeader() {
+  const { t } = useTranslation("home")
   return (
     <TableHead sx={{ backgroundColor: colors.grey[100] }}>
       <TableRow>
         <TableCell sx={{ fontWeight: "bold", textAlign: "left", p: "0.5rem 1rem", width: "35%" }}>
-          {"プロジェクト名"}
+          {t("projectTable.colProjectName")}
         </TableCell>
         <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "15%" }}>
-          {"作成日"}
+          {t("projectTable.colCreatedAt")}
         </TableCell>
         <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "15%" }}>
-          {"最終更新日"}
+          {t("projectTable.colUpdatedAt")}
         </TableCell>
         <TableCell sx={{ fontWeight: "bold", textAlign: "center", p: "0.5rem 1rem", width: "35%" }}>
-          {"操作"}
+          {t("projectTable.colActions")}
         </TableCell>
       </TableRow>
     </TableHead>
@@ -76,6 +78,7 @@ function ProjectTableHeader() {
  * Renders a single project row with edit and export buttons.
  */
 function ProjectTableRow({ project, user }: { project: ProjectInfo; user: User }) {
+  const { t } = useTranslation("home")
   const navigate = useNavigate()
   const token = useRecoilValue(tokenAtom)
   const { showSnackbar } = useSnackbar()
@@ -88,7 +91,7 @@ function ProjectTableRow({ project, user }: { project: ProjectInfo; user: User }
       const blob = await exportToJspsExcel(dmp)
       triggerDownload(blob, `dmp-jsps-${project.title}.xlsx`)
     } catch {
-      showSnackbar("エクスポートに失敗しました", "error")
+      showSnackbar(t("projectTable.exportFailed"), "error")
     } finally {
       setIsExporting(false)
     }
@@ -114,7 +117,7 @@ function ProjectTableRow({ project, user }: { project: ProjectInfo; user: User }
             onClick={() => navigate(`/projects/${project.id}/detail`)}
             startIcon={<InfoOutlined />}
           >
-            {"詳細"}
+            {t("projectTable.detail")}
           </Button>
           <Button
             variant="outlined"
@@ -123,7 +126,7 @@ function ProjectTableRow({ project, user }: { project: ProjectInfo; user: User }
             onClick={() => navigate(`/projects/${project.id}`)}
             startIcon={<EditOutlined />}
           >
-            {"編集"}
+            {t("projectTable.edit")}
           </Button>
           <Button
             variant="outlined"
@@ -132,11 +135,11 @@ function ProjectTableRow({ project, user }: { project: ProjectInfo; user: User }
             onClick={handleExport}
             startIcon={isExporting ? <CircularProgress size={14} color="inherit" /> : <DownloadingOutlined />}
             disabled={isExporting}
-            aria-label="出力"
+            aria-label={t("projectTable.export")}
           >
-            {"出力"}
+            {t("projectTable.export")}
           </Button>
-          <Tooltip title="GRDM プロジェクトを開く">
+          <Tooltip title={t("projectTable.openGrdm")}>
             <IconButton
               component="a"
               href={project.html}
@@ -155,18 +158,19 @@ function ProjectTableRow({ project, user }: { project: ProjectInfo; user: User }
 }
 
 export default function ProjectTable({ sx, user, projects }: ProjectTableProps) {
+  const { t } = useTranslation("home")
   const navigate = useNavigate()
   const filtered = projects.filter((p) => p.title.startsWith(DMP_PROJECT_PREFIX))
 
   return (
     <OurCard sx={sx}>
       <Typography sx={{ fontSize: "1.5rem" }} component="h1">
-        {"DMP Project 一覧"}
+        {t("projectTable.title")}
       </Typography>
       <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "1.5rem", mt: "0.5rem" }}>
         {filtered.length !== 0 ? (
           <Box sx={{ display: "flex", flexDirection: "column", width: "100%" }}>
-            <Typography>{"あなたの GRDM アカウントに紐づく DMP Project 一覧です。"}</Typography>
+            <Typography>{t("projectTable.description")}</Typography>
             <Box sx={{ mt: "1rem" }}>
               <Button
                 variant="contained"
@@ -174,7 +178,7 @@ export default function ProjectTable({ sx, user, projects }: ProjectTableProps) 
                 onClick={() => navigate("/projects/new")}
                 sx={{ textTransform: "none" }}
               >
-                {"新規 DMP Project を作成する"}
+                {t("projectTable.createNew")}
               </Button>
             </Box>
             <TableContainer component={Paper} variant="outlined" sx={{ borderBottom: "none", mt: "1.5rem" }}>
@@ -190,10 +194,10 @@ export default function ProjectTable({ sx, user, projects }: ProjectTableProps) 
           </Box>
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", width: "100%" }}>
-            <Typography>Project がありません。</Typography>
+            <Typography>{t("projectTable.noProjects")}</Typography>
             <Box sx={{ mt: "1rem" }}>
               <Button variant="contained" color="secondary" onClick={() => navigate("/projects/new")} sx={{ textTransform: "none" }}>
-                {"新規 DMP Project を作成する"}
+                {t("projectTable.createNew")}
               </Button>
             </Box>
           </Box>

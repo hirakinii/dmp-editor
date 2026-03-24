@@ -1,0 +1,34 @@
+{
+  "loginCard": {
+    "title": "Connect to GRDM",
+    "description1": "Obtain a GakuNin RDM Token and enter it below.",
+    "description2": "This token is used to communicate with GakuNin RDM and is stored only in this browser's Local Storage.",
+    "tokenLabel": "GRDM Token",
+    "tokenRequired": "Please enter your Token.",
+    "authenticate": "Authenticate",
+    "authenticating": "Authenticating...",
+    "authSuccess": "Authentication successful.",
+    "authFailed": "Authentication failed. Please check your Token.",
+    "authError": "An error occurred during authentication.",
+    "tokenGuide1": "You can obtain a Token from ",
+    "tokenGuide2": ".",
+    "tokenGuide3": "Also refer to ",
+    "tokenGuide4": "Personal Access Token | GakuNin RDM Support Portal",
+    "tokenGuide5": "."
+  },
+  "projectTable": {
+    "title": "DMP Project List",
+    "description": "DMP Projects linked to your GRDM account.",
+    "noProjects": "No projects found.",
+    "createNew": "Create a new DMP Project",
+    "colProjectName": "Project Name",
+    "colCreatedAt": "Created",
+    "colUpdatedAt": "Last Updated",
+    "colActions": "Actions",
+    "detail": "Detail",
+    "edit": "Edit",
+    "export": "Export",
+    "openGrdm": "Open GRDM Project",
+    "exportFailed": "Export failed"
+  }
+}
