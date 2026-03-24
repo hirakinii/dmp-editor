@@ -1,4 +1,4 @@
-import type { GrdmFileItem } from "@hirakinii-packages/grdm-api-typescript"
+import type { GrdmFileItem, GrdmFileMetadataResponse } from "@hirakinii-packages/grdm-api-typescript"
 import { useQuery } from "@tanstack/react-query"
 import { useRecoilValue } from "recoil"
 
@@ -31,13 +31,18 @@ export const useGrdmFileItemMetadata = (
       })
       if (!response.ok) throw new Error(`GRDM v1 API error: ${response.status} ${response.statusText}`)
 
-      const data = await response.json()
+      const data: GrdmFileMetadataResponse = await response.json() as GrdmFileMetadataResponse
       const files: GrdmFileItem[] = data?.data?.attributes?.files ?? []
       // GrdmFileItem.path has no leading slash (e.g. "osfstorage/file.csv"),
       // while materialized_path from the OSF v2 API includes one (e.g. "/osfstorage/file.csv").
       // Strip the leading slash before comparing.
       const normalizedPath = filePath.startsWith("/") ? filePath.slice(1) : filePath
-      return files.find((file) => file.path === normalizedPath) ?? null
+      return files.find((file) => {
+        const sourceFilePath: string = file.path.startsWith("/") ? file.path.slice(1) : file.path
+        const providerStrippedFilePath: string = sourceFilePath.startsWith("osfstorage/") ? sourceFilePath.slice(11) : sourceFilePath
+        return providerStrippedFilePath === normalizedPath
+      },
+      ) ?? null
     },
     enabled: false,
   })
