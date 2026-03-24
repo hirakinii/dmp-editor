@@ -17,6 +17,7 @@ import {
 } from "@mui/material"
 import { useState } from "react"
 import { useErrorBoundary } from "react-error-boundary"
+import { useTranslation } from "react-i18next"
 import { Link, useParams } from "react-router-dom"
 
 import grdmLogoMark from "@/assets/grdm_logo_mark.png"
@@ -68,24 +69,25 @@ function SectionTitle({ children }: SectionTitleProps) {
 }
 
 function PersonInfoTable({ persons }: { persons: PersonInfo[] }) {
+  const { t } = useTranslation("detailProject")
   return (
     <TableContainer component={Paper} variant="outlined" sx={{ mt: "0.5rem" }}>
       <Table size="small">
         <TableHead sx={{ backgroundColor: colors.grey[100] }}>
           <TableRow>
-            <TableCell sx={{ fontWeight: "bold" }}>{"役割"}</TableCell>
-            <TableCell sx={{ fontWeight: "bold" }}>{"姓"}</TableCell>
-            <TableCell sx={{ fontWeight: "bold" }}>{"名"}</TableCell>
-            <TableCell sx={{ fontWeight: "bold" }}>{"所属機関"}</TableCell>
-            <TableCell sx={{ fontWeight: "bold" }}>{"e-Rad 研究者番号"}</TableCell>
-            <TableCell sx={{ fontWeight: "bold" }}>{"ORCID"}</TableCell>
-            <TableCell sx={{ fontWeight: "bold" }}>{"連絡先"}</TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>{t("personTable.colRole")}</TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>{t("personTable.colLastName")}</TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>{t("personTable.colFirstName")}</TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>{t("personTable.colAffiliation")}</TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>{t("personTable.colERadId")}</TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>{t("personTable.colOrcid")}</TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>{t("personTable.colContact")}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {persons.map((p, i) => (
             <TableRow key={i}>
-              <TableCell>{p.role.join("、")}</TableCell>
+              <TableCell>{p.role.join(t("personTable.roleSeparator"))}</TableCell>
               <TableCell>{p.lastName}</TableCell>
               <TableCell>{p.firstName}</TableCell>
               <TableCell>{p.affiliation}</TableCell>
@@ -101,16 +103,17 @@ function PersonInfoTable({ persons }: { persons: PersonInfo[] }) {
 }
 
 function DataInfoTable({ dataList }: { dataList: DataInfo[] }) {
+  const { t } = useTranslation("detailProject")
   return (
     <TableContainer component={Paper} variant="outlined" sx={{ mt: "0.5rem" }}>
       <Table size="small">
         <TableHead sx={{ backgroundColor: colors.grey[100] }}>
           <TableRow>
-            <TableCell sx={{ fontWeight: "bold" }}>{"データ名称"}</TableCell>
-            <TableCell sx={{ fontWeight: "bold" }}>{"データの分野"}</TableCell>
-            <TableCell sx={{ fontWeight: "bold" }}>{"データ種別"}</TableCell>
-            <TableCell sx={{ fontWeight: "bold" }}>{"アクセス権"}</TableCell>
-            <TableCell sx={{ fontWeight: "bold" }}>{"データ管理機関"}</TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>{t("dataTable.colDataName")}</TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>{t("dataTable.colField")}</TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>{t("dataTable.colType")}</TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>{t("dataTable.colAccessRights")}</TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>{t("dataTable.colAgency")}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -132,6 +135,7 @@ function DataInfoTable({ dataList }: { dataList: DataInfo[] }) {
 // --- Main page ---
 
 export default function DetailProject() {
+  const { t } = useTranslation("detailProject")
   const { projectId = "" } = useParams<{ projectId: string }>()
   const dmpQuery = useDmp(projectId)
   const { showBoundary } = useErrorBoundary()
@@ -175,7 +179,7 @@ export default function DetailProject() {
         {/* Header */}
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Typography sx={{ fontSize: "1.5rem" }} component="h1">
-            {`DMP「${dmp.projectInfo.projectName}」`}
+            {t("pageTitle", { name: dmp.projectInfo.projectName })}
           </Typography>
           <Box sx={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
             <Button
@@ -184,7 +188,7 @@ export default function DetailProject() {
               variant="contained"
               color="primary"
             >
-              {"編集する"}
+              {t("editButton")}
             </Button>
             <Button
               variant="contained"
@@ -193,9 +197,9 @@ export default function DetailProject() {
               disabled={isDownloading}
               startIcon={isDownloading ? <CircularProgress size={20} /> : <DownloadingOutlined />}
             >
-              {isDownloading ? "出力中..." : "出力"}
+              {isDownloading ? t("downloadingButton") : t("downloadButton")}
             </Button>
-            <Tooltip title="GRDM プロジェクトを開く">
+            <Tooltip title={t("grdmTooltip")}>
               <IconButton
                 component="a"
                 href={`${GRDM_CONFIG.BASE_URL}/${projectId}`}
@@ -215,30 +219,30 @@ export default function DetailProject() {
         </Box>
 
         {/* DMP 作成・更新情報 */}
-        <SectionTitle>{"DMP 作成・更新情報"}</SectionTitle>
-        <LabelValueRow label="DMP 作成年月日" value={dmp.metadata.dateCreated} />
-        <LabelValueRow label="DMP 最終更新年月日" value={dmp.metadata.dateModified} />
-        <LabelValueRow label="研究フェーズ" value={dmp.metadata.researchPhase} />
-        <LabelValueRow label="種別" value={dmp.metadata.revisionType} />
-        <LabelValueRow label="提出日" value={dmp.metadata.submissionDate} />
+        <SectionTitle>{t("sections.dmpInfo")}</SectionTitle>
+        <LabelValueRow label={t("dmpMeta.dateCreated")} value={dmp.metadata.dateCreated} />
+        <LabelValueRow label={t("dmpMeta.dateModified")} value={dmp.metadata.dateModified} />
+        <LabelValueRow label={t("dmpMeta.researchPhase")} value={dmp.metadata.researchPhase} />
+        <LabelValueRow label={t("dmpMeta.revisionType")} value={dmp.metadata.revisionType} />
+        <LabelValueRow label={t("dmpMeta.submissionDate")} value={dmp.metadata.submissionDate} />
 
         {/* 研究課題情報 */}
-        <SectionTitle>{"研究課題情報"}</SectionTitle>
-        <LabelValueRow label="資金配分機関" value={dmp.projectInfo.fundingAgency} />
-        <LabelValueRow label="プログラム名" value={dmp.projectInfo.programName} />
-        <LabelValueRow label="プログラム情報コード" value={dmp.projectInfo.programCode} />
-        <LabelValueRow label="体系的番号" value={dmp.projectInfo.projectCode} />
-        <LabelValueRow label="プロジェクト名" value={dmp.projectInfo.projectName} />
-        <LabelValueRow label="採択年度" value={dmp.projectInfo.adoptionYear} />
-        <LabelValueRow label="事業開始年度" value={dmp.projectInfo.startYear} />
-        <LabelValueRow label="事業終了年度" value={dmp.projectInfo.endYear} />
+        <SectionTitle>{t("sections.projectInfo")}</SectionTitle>
+        <LabelValueRow label={t("projectInfo.fundingAgency")} value={dmp.projectInfo.fundingAgency} />
+        <LabelValueRow label={t("projectInfo.programName")} value={dmp.projectInfo.programName} />
+        <LabelValueRow label={t("projectInfo.programCode")} value={dmp.projectInfo.programCode} />
+        <LabelValueRow label={t("projectInfo.projectCode")} value={dmp.projectInfo.projectCode} />
+        <LabelValueRow label={t("projectInfo.projectName")} value={dmp.projectInfo.projectName} />
+        <LabelValueRow label={t("projectInfo.adoptionYear")} value={dmp.projectInfo.adoptionYear} />
+        <LabelValueRow label={t("projectInfo.startYear")} value={dmp.projectInfo.startYear} />
+        <LabelValueRow label={t("projectInfo.endYear")} value={dmp.projectInfo.endYear} />
 
         {/* 担当者情報 */}
-        <SectionTitle>{"担当者情報"}</SectionTitle>
+        <SectionTitle>{t("sections.personInfo")}</SectionTitle>
         <PersonInfoTable persons={dmp.personInfo} />
 
         {/* 研究データ情報 */}
-        <SectionTitle>{"研究データ情報"}</SectionTitle>
+        <SectionTitle>{t("sections.dataInfo")}</SectionTitle>
         <DataInfoTable dataList={dmp.dataInfo} />
       </OurCard>
     </Frame>

@@ -3,10 +3,12 @@ import LanguageDetector from "i18next-browser-languagedetector"
 import { initReactI18next } from "react-i18next"
 
 import enCommon from "./locales/en/common.json"
+import enDetailProject from "./locales/en/detailProject.json"
 import enEditProject from "./locales/en/editProject.json"
 import enHome from "./locales/en/home.json"
 import enStatus from "./locales/en/status.json"
 import jaCommon from "./locales/ja/common.json"
+import jaDetailProject from "./locales/ja/detailProject.json"
 import jaEditProject from "./locales/ja/editProject.json"
 import jaHome from "./locales/ja/home.json"
 import jaStatus from "./locales/ja/status.json"
@@ -28,12 +30,14 @@ i18n
         common: jaCommon,
         home: jaHome,
         editProject: jaEditProject,
+        detailProject: jaDetailProject,
         status: jaStatus,
       },
       en: {
         common: enCommon,
         home: enHome,
         editProject: enEditProject,
+        detailProject: enDetailProject,
         status: enStatus,
       },
     },

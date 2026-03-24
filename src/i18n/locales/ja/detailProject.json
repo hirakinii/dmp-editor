@@ -1,0 +1,47 @@
+{
+  "pageTitle": "DMP「{{name}}」",
+  "editButton": "編集する",
+  "downloadButton": "出力",
+  "downloadingButton": "出力中...",
+  "grdmTooltip": "GRDM プロジェクトを開く",
+  "sections": {
+    "dmpInfo": "DMP 作成・更新情報",
+    "projectInfo": "研究課題情報",
+    "personInfo": "担当者情報",
+    "dataInfo": "研究データ情報"
+  },
+  "dmpMeta": {
+    "dateCreated": "DMP 作成年月日",
+    "dateModified": "DMP 最終更新年月日",
+    "researchPhase": "研究フェーズ",
+    "revisionType": "種別",
+    "submissionDate": "提出日"
+  },
+  "projectInfo": {
+    "fundingAgency": "資金配分機関",
+    "programName": "プログラム名",
+    "programCode": "プログラム情報コード",
+    "projectCode": "体系的番号",
+    "projectName": "プロジェクト名",
+    "adoptionYear": "採択年度",
+    "startYear": "事業開始年度",
+    "endYear": "事業終了年度"
+  },
+  "personTable": {
+    "colRole": "役割",
+    "colLastName": "姓",
+    "colFirstName": "名",
+    "colAffiliation": "所属機関",
+    "colERadId": "e-Rad 研究者番号",
+    "colOrcid": "ORCID",
+    "colContact": "連絡先",
+    "roleSeparator": "、"
+  },
+  "dataTable": {
+    "colDataName": "データ名称",
+    "colField": "データの分野",
+    "colType": "データ種別",
+    "colAccessRights": "アクセス権",
+    "colAgency": "データ管理機関"
+  }
+}
