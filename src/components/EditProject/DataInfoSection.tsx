@@ -51,6 +51,7 @@ import {
 import { useTranslation } from "react-i18next"
 
 import GrdmSelectModal from "@/components/EditProject/GrdmSelectModal"
+import { mapAccessRights, mapDataType, mapResearchField } from "@/components/EditProject/grdmValueMappers"
 import HelpChip from "@/components/EditProject/HelpChip"
 import OurFormLabel from "@/components/EditProject/OurFormLabel"
 import SectionHeader from "@/components/EditProject/SectionHeader"
@@ -120,16 +121,18 @@ interface GrdmFieldMapping {
   dataInfoKey: keyof DataInfo
   grdmKey: keyof GrdmFileMetadataSchema
   labelKey: string
+  transform?: (value: string) => string | null
 }
 
 const GRDM_FIELD_MAP: GrdmFieldMapping[] = [
   { dataInfoKey: "dataName", grdmKey: "grdm-file:title-ja", labelKey: "dataInfo.fields.dataName" },
   { dataInfoKey: "publicationDate", grdmKey: "grdm-file:date-issued-updated", labelKey: "dataInfo.fields.publicationDate" },
   { dataInfoKey: "description", grdmKey: "grdm-file:data-description-ja", labelKey: "dataInfo.fields.description" },
-  { dataInfoKey: "researchField", grdmKey: "grdm-file:data-research-field", labelKey: "dataInfo.fields.researchField" },
-  { dataInfoKey: "dataType", grdmKey: "grdm-file:data-type", labelKey: "dataInfo.fields.dataType" },
+  { dataInfoKey: "researchField", grdmKey: "grdm-file:data-research-field", labelKey: "dataInfo.fields.researchField", transform: mapResearchField },
+  { dataInfoKey: "dataType", grdmKey: "grdm-file:data-type", labelKey: "dataInfo.fields.dataType", transform: mapDataType },
   { dataInfoKey: "dataSize", grdmKey: "grdm-file:file-size", labelKey: "dataInfo.fields.dataSize" },
-  { dataInfoKey: "accessRights", grdmKey: "grdm-file:access-rights", labelKey: "dataInfo.fields.accessRights" },
+  { dataInfoKey: "usagePolicy", grdmKey: "grdm-file:data-policy-cite-ja", labelKey: "dataInfo.fields.usagePolicy" },
+  { dataInfoKey: "accessRights", grdmKey: "grdm-file:access-rights", labelKey: "dataInfo.fields.accessRights", transform: mapAccessRights },
   { dataInfoKey: "plannedPublicationDate", grdmKey: "grdm-file:available-date", labelKey: "dataInfo.fields.plannedPublicationDate" },
   { dataInfoKey: "repositoryInformation", grdmKey: "grdm-file:repo-information-ja", labelKey: "dataInfo.fields.repositoryInformation" },
   { dataInfoKey: "repository", grdmKey: "grdm-file:repo-url-doi-link", labelKey: "dataInfo.fields.repository" },
@@ -306,12 +309,11 @@ interface GrdmCompareModalProps {
 
 function GrdmCompareModal({ open, onClose, fileItem, getCurrentValue, onApply }: GrdmCompareModalProps) {
   const { t } = useTranslation("editProject")
-  const mappedFields = GRDM_FIELD_MAP.map((m) => ({
-    ...m,
-    label: t(m.labelKey),
-    currentValue: getCurrentValue(m.dataInfoKey),
-    grdmValue: getGrdmFieldValue(fileItem, m.grdmKey),
-  })).filter((f) => f.grdmValue !== null)
+  const mappedFields = GRDM_FIELD_MAP.map((m) => {
+    const rawValue = getGrdmFieldValue(fileItem, m.grdmKey)
+    const grdmValue = rawValue !== null && m.transform ? m.transform(rawValue) : rawValue
+    return { ...m, label: t(m.labelKey), currentValue: getCurrentValue(m.dataInfoKey), grdmValue }
+  }).filter((f) => f.grdmValue !== null)
 
   const [selectedKeys, setSelectedKeys] = useState<Set<keyof DataInfo>>(new Set())
 
