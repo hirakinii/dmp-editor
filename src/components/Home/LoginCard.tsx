@@ -125,7 +125,7 @@ export default function LoginCard({ sx }: LoginCardProps) {
           <Button
             type="submit"
             variant="contained"
-            sx={{ width: "120px" }}
+            sx={{ width: "160px" }}
             color="secondary"
             disabled={isSubmitting}
             startIcon={<LockOutlined />}
