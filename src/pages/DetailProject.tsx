@@ -4,6 +4,7 @@ import {
   Button,
   CircularProgress,
   IconButton,
+  Link,
   Table,
   TableBody,
   TableCell,
@@ -18,15 +19,16 @@ import {
 import { useState } from "react"
 import { useErrorBoundary } from "react-error-boundary"
 import { useTranslation } from "react-i18next"
-import { Link, useParams } from "react-router-dom"
+import { Link as RouterLink, useParams } from "react-router-dom"
 
 import grdmLogoMark from "@/assets/grdm_logo_mark.png"
 import Frame from "@/components/Frame"
 import Loading from "@/components/Loading"
 import OurCard from "@/components/OurCard"
 import { GRDM_CONFIG } from "@/config"
-import type { DataInfo, PersonInfo } from "@/dmp"
+import type { DataInfo, LinkedGrdmProject, PersonInfo } from "@/dmp"
 import { useDmp } from "@/hooks/useDmp"
+import { useProjectInfo } from "@/hooks/useProjectInfo"
 import { exportToJspsExcel } from "@/jspsExport"
 
 // --- Sub-components ---
@@ -132,6 +134,74 @@ function DataInfoTable({ dataList }: { dataList: DataInfo[] }) {
   )
 }
 
+function LinkedGrdmProjectItem({ projectId }: { projectId: string }) {
+  const { t } = useTranslation("detailProject")
+  const projectQuery = useProjectInfo(projectId)
+
+  const href = projectQuery.data?.html ?? `${GRDM_CONFIG.BASE_URL}/${projectId}`
+  let nameLabel: string
+  if (projectQuery.isLoading) {
+    nameLabel = t("linkedGrdmProjectsSection.loadingProject")
+  } else {
+    nameLabel = projectQuery.data?.title ?? projectId
+  }
+  const dateCreated = projectQuery.data?.dateCreated?.slice(0, 10) ?? "—"
+  const dateModified = projectQuery.data?.dateModified?.slice(0, 10) ?? "—"
+
+  return (
+    <TableRow>
+      <TableCell>
+        <Link href={href} target="_blank" rel="noopener noreferrer" underline="hover">
+          {nameLabel}
+        </Link>
+      </TableCell>
+      <TableCell>{projectId}</TableCell>
+      <TableCell>{dateCreated}</TableCell>
+      <TableCell>{dateModified}</TableCell>
+    </TableRow>
+  )
+}
+
+function LinkedGrdmProjectsSection({ projects }: { projects: LinkedGrdmProject[] }) {
+  const { t } = useTranslation("detailProject")
+
+  if (projects.length === 0) {
+    return (
+      <Typography sx={{ color: colors.grey[600], mt: "0.5rem" }}>
+        {t("linkedGrdmProjectsSection.empty")}
+      </Typography>
+    )
+  }
+
+  return (
+    <TableContainer component={Paper} variant="outlined" sx={{ mt: "0.5rem" }}>
+      <Table size="small">
+        <TableHead sx={{ backgroundColor: colors.grey[100] }}>
+          <TableRow>
+            <TableCell sx={{ fontWeight: "bold" }}>
+              {t("linkedGrdmProjectsSection.colProjectName")}
+            </TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>
+              {t("linkedGrdmProjectsSection.colProjectId")}
+            </TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>
+              {t("linkedGrdmProjectsSection.colDateCreated")}
+            </TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>
+              {t("linkedGrdmProjectsSection.colDateModified")}
+            </TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {projects.map((p) => (
+            <LinkedGrdmProjectItem key={p.projectId} projectId={p.projectId} />
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  )
+}
+
 // --- Main page ---
 
 export default function DetailProject() {
@@ -183,7 +253,7 @@ export default function DetailProject() {
           </Typography>
           <Box sx={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
             <Button
-              component={Link}
+              component={RouterLink}
               to={`/projects/${projectId}`}
               variant="contained"
               color="primary"
@@ -244,6 +314,10 @@ export default function DetailProject() {
         {/* 研究データ情報 */}
         <SectionTitle>{t("sections.dataInfo")}</SectionTitle>
         <DataInfoTable dataList={dmp.dataInfo} />
+
+        {/* リンクされている GRDM プロジェクト */}
+        <SectionTitle>{t("sections.linkedGrdmProjects")}</SectionTitle>
+        <LinkedGrdmProjectsSection projects={dmp.linkedGrdmProjects} />
       </OurCard>
     </Frame>
   )
