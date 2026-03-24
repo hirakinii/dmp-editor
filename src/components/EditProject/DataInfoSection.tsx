@@ -71,7 +71,7 @@ interface FormData {
   key: keyof DataInfo
   labelKey: string
   required: boolean
-  placeholder?: string
+  placeholderKey?: string
   helperText?: string
   type: "text" | "date" | "select"
   options?: string[]
@@ -85,30 +85,30 @@ interface FormData {
 // ============================================================
 
 const formData: FormData[] = [
-  { key: "dataName", labelKey: "dataInfo.fields.dataName", required: true, type: "text", placeholder: "e.g., ○○の実証における○○撮像データ", helpChipKey: "dataName" },
+  { key: "dataName", labelKey: "dataInfo.fields.dataName", required: true, type: "text", placeholderKey: "dataInfo.placeholders.dataName", helpChipKey: "dataName" },
   { key: "publicationDate", labelKey: "dataInfo.fields.publicationDate", required: false, type: "date" },
-  { key: "description", labelKey: "dataInfo.fields.description", required: true, type: "text", placeholder: "e.g., ○○実証において、○○撮像画像データ", helpChipKey: "description", minRows: 3 },
-  { key: "acquisitionMethod", labelKey: "dataInfo.fields.acquisitionMethod", required: false, type: "text", placeholder: "e.g., センサを設置し、自ら取得, 自らシミュレーションを行い取得", helpChipKey: "acquisitionMethod", minRows: 3 },
+  { key: "description", labelKey: "dataInfo.fields.description", required: true, type: "text", placeholderKey: "dataInfo.placeholders.description", helpChipKey: "description", minRows: 3 },
+  { key: "acquisitionMethod", labelKey: "dataInfo.fields.acquisitionMethod", required: false, type: "text", placeholderKey: "dataInfo.placeholders.acquisitionMethod", helpChipKey: "acquisitionMethod", minRows: 3 },
   { key: "researchField", labelKey: "dataInfo.fields.researchField", required: true, type: "select", options: [...researchField] },
   { key: "dataType", labelKey: "dataInfo.fields.dataType", required: true, type: "select", options: [...dataType] },
-  { key: "dataSize", labelKey: "dataInfo.fields.dataSize", required: false, type: "text", placeholder: "e.g., <1GB, 1-10GB, 10-100GB, >100GB", helpChipKey: "dataSize" },
-  { key: "reuseInformation", labelKey: "dataInfo.fields.reuseInformation", required: false, type: "text", placeholder: "e.g., データ項目に関するコードブックあり", helpChipKey: "reuseInformation", minRows: 3 },
+  { key: "dataSize", labelKey: "dataInfo.fields.dataSize", required: false, type: "text", placeholderKey: "dataInfo.placeholders.dataSize", helpChipKey: "dataSize" },
+  { key: "reuseInformation", labelKey: "dataInfo.fields.reuseInformation", required: false, type: "text", placeholderKey: "dataInfo.placeholders.reuseInformation", helpChipKey: "reuseInformation", minRows: 3 },
   { key: "hasSensitiveData", labelKey: "dataInfo.fields.hasSensitiveData", required: false, type: "select", options: ["", ...hasSensitiveData] },
-  { key: "sensitiveDataPolicy", labelKey: "dataInfo.fields.sensitiveDataPolicy", required: false, type: "text", placeholder: "e.g., 個人情報の取扱いについては、関係法令を遵守する。", helpChipKey: "sensitiveDataPolicy", minRows: 3 },
-  { key: "usagePolicy", labelKey: "dataInfo.fields.usagePolicy", required: true, type: "text", placeholder: "e.g., △△のデータは取得後随時公開、○○のデータは一定期間経過の後公開", helpChipKey: "usagePolicy", minRows: 3 },
-  { key: "repositoryInformation", labelKey: "dataInfo.fields.repositoryInformation", required: true, type: "text", placeholder: "e.g., 研究代表者が所属する○○大学 (研究室) のストレージで保存", helpChipKey: "repositoryInformation", minRows: 3 },
-  { key: "backupLocation", labelKey: "dataInfo.fields.backupLocation", required: false, type: "text", placeholder: "e.g., 研究代表者が所属する○○大学 (研究室) のストレージのバックアップサービスによる", helpChipKey: "backupLocation", minRows: 3 },
-  { key: "publicationPolicy", labelKey: "dataInfo.fields.publicationPolicy", required: false, type: "text", placeholder: "e.g., 取得後随時公開", helpChipKey: "publicationPolicy", minRows: 3 },
+  { key: "sensitiveDataPolicy", labelKey: "dataInfo.fields.sensitiveDataPolicy", required: false, type: "text", placeholderKey: "dataInfo.placeholders.sensitiveDataPolicy", helpChipKey: "sensitiveDataPolicy", minRows: 3 },
+  { key: "usagePolicy", labelKey: "dataInfo.fields.usagePolicy", required: true, type: "text", placeholderKey: "dataInfo.placeholders.usagePolicy", helpChipKey: "usagePolicy", minRows: 3 },
+  { key: "repositoryInformation", labelKey: "dataInfo.fields.repositoryInformation", required: true, type: "text", placeholderKey: "dataInfo.placeholders.repositoryInformation", helpChipKey: "repositoryInformation", minRows: 3 },
+  { key: "backupLocation", labelKey: "dataInfo.fields.backupLocation", required: false, type: "text", placeholderKey: "dataInfo.placeholders.backupLocation", helpChipKey: "backupLocation", minRows: 3 },
+  { key: "publicationPolicy", labelKey: "dataInfo.fields.publicationPolicy", required: false, type: "text", placeholderKey: "dataInfo.placeholders.publicationPolicy", helpChipKey: "publicationPolicy", minRows: 3 },
   { key: "accessRights", labelKey: "dataInfo.fields.accessRights", required: true, type: "select", options: [...accessRights] },
   { key: "plannedPublicationDate", labelKey: "dataInfo.fields.plannedPublicationDate", required: false, type: "date" },
-  { key: "repository", labelKey: "dataInfo.fields.repository", required: false, type: "text", placeholder: "e.g., ○○大学機関リポジトリ, https://doi.org/10.12345/abcde", helpChipKey: "repository" },
+  { key: "repository", labelKey: "dataInfo.fields.repository", required: false, type: "text", placeholderKey: "dataInfo.placeholders.repository", helpChipKey: "repository" },
   { key: "dataCreator", labelKey: "dataInfo.fields.dataCreator", required: false, type: "select", options: [] },
-  { key: "dataManagementAgency", labelKey: "dataInfo.fields.dataManagementAgency", required: true, type: "text", placeholder: "e.g., ○○大学" },
-  { key: "rorId", labelKey: "dataInfo.fields.rorId", required: false, type: "text", placeholder: "e.g., https://ror.org/123456789", helpChipKey: "rorId" },
-  { key: "dataManager", labelKey: "dataInfo.fields.dataManager", required: true, type: "text", placeholder: "e.g., ××推進部", helpChipKey: "dataManager" },
-  { key: "dataManagerContact", labelKey: "dataInfo.fields.dataManagerContact", required: true, type: "text", placeholder: "e.g., xxx@xxx, 〇〇県〇〇市××", helpChipKey: "dataManagerContact" },
-  { key: "dataStorageLocation", labelKey: "dataInfo.fields.dataStorageLocation", required: false, type: "text", placeholder: "e.g., ○○大学機関リポジトリ, △△研究所内データサーバー" },
-  { key: "dataStoragePeriod", labelKey: "dataInfo.fields.dataStoragePeriod", required: false, type: "text", placeholder: "e.g., 永久保存, 10年" },
+  { key: "dataManagementAgency", labelKey: "dataInfo.fields.dataManagementAgency", required: true, type: "text", placeholderKey: "dataInfo.placeholders.dataManagementAgency" },
+  { key: "rorId", labelKey: "dataInfo.fields.rorId", required: false, type: "text", placeholderKey: "dataInfo.placeholders.rorId", helpChipKey: "rorId" },
+  { key: "dataManager", labelKey: "dataInfo.fields.dataManager", required: true, type: "text", placeholderKey: "dataInfo.placeholders.dataManager", helpChipKey: "dataManager" },
+  { key: "dataManagerContact", labelKey: "dataInfo.fields.dataManagerContact", required: true, type: "text", placeholderKey: "dataInfo.placeholders.dataManagerContact", helpChipKey: "dataManagerContact" },
+  { key: "dataStorageLocation", labelKey: "dataInfo.fields.dataStorageLocation", required: false, type: "text", placeholderKey: "dataInfo.placeholders.dataStorageLocation" },
+  { key: "dataStoragePeriod", labelKey: "dataInfo.fields.dataStoragePeriod", required: false, type: "text", placeholderKey: "dataInfo.placeholders.dataStoragePeriod" },
 ]
 
 // ============================================================
@@ -268,7 +268,7 @@ function DataManagementAgencyField({ label, required, helpChip, source, onSource
                 inputRef={field.ref}
                 error={!!error}
                 helperText={error?.message}
-                placeholder="e.g., ○○大学"
+                placeholder={t("dataInfo.placeholders.dataManagementAgency")}
                 size="small"
                 slotProps={{
                   input: {
@@ -590,7 +590,7 @@ function DataInfoForm({ index, totalCount, onSubmit, onClose, researchPhase, per
 
         {/* Form fields */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          {formData.map(({ key, labelKey, required: staticRequired, helperText, placeholder, type, selectMultiple, helpChipKey, minRows }) => {
+          {formData.map(({ key, labelKey, required: staticRequired, helperText, placeholderKey, type, selectMultiple, helpChipKey, minRows }) => {
             const label = t(labelKey)
             const effectiveRequired = getEffectiveRequired(key, staticRequired)
             const fieldSource = getFieldSource(key)
@@ -647,7 +647,7 @@ function DataInfoForm({ index, totalCount, onSubmit, onClose, researchPhase, per
                         variant="outlined"
                         error={!!error}
                         helperText={error?.message ?? (key === "dataCreator" ? t("dataInfo.helperText.dataCreator") : helperText)}
-                        placeholder={placeholder}
+                        placeholder={placeholderKey ? t(placeholderKey) : undefined}
                         value={getValue(key)}
                         onChange={(e) => updateValue(key, e.target.value)}
                         type={type === "date" ? "date" : "text"}
