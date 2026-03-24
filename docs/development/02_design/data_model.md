@@ -83,16 +83,18 @@ erDiagram
     }
 
     LinkedGrdmFile {
-        string fileId "GRDM ファイル ID"
-        string filePath "GRDM 上のファイルパス"
+        string projectId "所属 GRDM プロジェクト ID"
+        string nodeId "GRDM ノード ID (ファイル識別子)"
+        string label "ファイル名"
+        enum type "固定値: file"
         int size "ファイルサイズ (bytes, nullable)"
-        string materializedPath "マテリアライズドパス (nullable)"
-        string lastTouched "最終アクセス日時 (nullable)"
-        string dateModified "更新日時 (nullable)"
-        string dateCreated "作成日時 (nullable)"
-        string hashMd5 "MD5 ハッシュ値 (nullable)"
-        string hashSha256 "SHA256 ハッシュ値 (nullable)"
-        string link "ダウンロードリンク (nullable)"
+        string materialized_path "フルパス (nullable)"
+        string last_touched "最終アクセス日時 (nullable)"
+        string date_modified "更新日時 (nullable)"
+        string date_created "作成日時 (nullable)"
+        string hash_md5 "MD5 ハッシュ値 (nullable)"
+        string hash_sha256 "SHA256 ハッシュ値 (nullable)"
+        string link "GRDM ページ URL (nullable)"
     }
 ```
 
@@ -145,9 +147,13 @@ erDiagram
       "dataManagerContact": "rdm@example.ac.jp",
       "linkedGrdmFiles": [
         {
-          "fileId": "abc123",
-          "filePath": "/data/experiment_a.csv",
-          "hashMd5": "d41d8cd98f00b204e9800998ecf8427e"
+          "projectId": "xxxxx",
+          "nodeId": "abc123",
+          "label": "experiment_a.csv",
+          "type": "file",
+          "materialized_path": "/data/experiment_a.csv",
+          "hash_md5": "d41d8cd98f00b204e9800998ecf8427e",
+          "size": 4096
         }
       ]
     }

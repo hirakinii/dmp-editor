@@ -8,10 +8,11 @@ DMP Editor はバックエンドサーバーを持たないフロントエンド
 graph TB
     subgraph Browser["Browser (SPA)"]
         subgraph React["React Application"]
-            UI["UI Layer<br/>(MUI Components)"]
+            UI["UI Layer<br/>(MUI Components + MUI X Tree View)"]
             RHF["Form State<br/>(React Hook Form + Zod)"]
             RQ["Server State<br/>(TanStack Query)"]
             Recoil["Global State<br/>(Recoil: Auth Token)"]
+            i18n["I18n<br/>(i18next: ja/en)"]
         end
 
         subgraph Clients["API Clients"]
