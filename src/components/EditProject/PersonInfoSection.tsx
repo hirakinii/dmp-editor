@@ -15,6 +15,7 @@ import React, { useState } from "react"
 import {
   Controller, FormProvider, useFieldArray, useForm, useFormContext, useFormState, useWatch,
 } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 
 import HelpChip from "@/components/EditProject/HelpChip"
 import OurFormLabel from "@/components/EditProject/OurFormLabel"
@@ -30,7 +31,7 @@ import theme from "@/theme"
 
 interface FieldConfig {
   key: keyof PersonInfo
-  label: string
+  labelKey: string
   required: boolean
   type: "text" | "date" | "select"
   options?: string[]
@@ -40,25 +41,18 @@ interface FieldConfig {
 }
 
 // ============================================================
-// Field configuration
+// Field configuration (keys only; labels resolved via t() in components)
 // ============================================================
 
 const fieldConfigs: FieldConfig[] = [
-  {
-    key: "role",
-    label: "役割",
-    required: true,
-    type: "select",
-    options: [...personRole],
-    selectMultiple: true,
-  },
-  { key: "lastName", label: "姓", required: true, type: "text" },
-  { key: "firstName", label: "名", required: true, type: "text" },
-  { key: "eRadResearcherId", label: "e-Rad 研究者番号", required: false, type: "text" },
-  { key: "orcid", label: "ORCID", required: false, type: "text" },
-  { key: "affiliation", label: "所属機関", required: true, type: "text" },
-  { key: "contact", label: "連絡先（メールアドレス）", required: false, type: "text" },
-  { key: "grdmUserId", label: "GRDM ユーザー ID", required: false, type: "text" },
+  { key: "role", labelKey: "personInfo.fields.role", required: true, type: "select", options: [...personRole], selectMultiple: true },
+  { key: "lastName", labelKey: "personInfo.fields.lastName", required: true, type: "text" },
+  { key: "firstName", labelKey: "personInfo.fields.firstName", required: true, type: "text" },
+  { key: "eRadResearcherId", labelKey: "personInfo.fields.eRadResearcherId", required: false, type: "text" },
+  { key: "orcid", labelKey: "personInfo.fields.orcid", required: false, type: "text" },
+  { key: "affiliation", labelKey: "personInfo.fields.affiliation", required: true, type: "text" },
+  { key: "contact", labelKey: "personInfo.fields.contact", required: false, type: "text" },
+  { key: "grdmUserId", labelKey: "personInfo.fields.grdmUserId", required: false, type: "text" },
 ]
 
 // ============================================================
@@ -66,13 +60,14 @@ const fieldConfigs: FieldConfig[] = [
 // ============================================================
 
 function SourceBadge({ source }: { source?: ValueSource }) {
+  const { t } = useTranslation("editProject")
   if (!source) return null
   const labels: Record<ValueSource, string> = {
     kaken: "KAKEN",
     grdm: "GRDM",
-    manual: "ユーザーによる入力",
+    manual: t("personInfo.sourceBadge.manual"),
   }
-  const colors: Record<ValueSource, "info" | "success" | "default"> = {
+  const chipColors: Record<ValueSource, "info" | "success" | "default"> = {
     kaken: "info",
     grdm: "success",
     manual: "default",
@@ -80,7 +75,7 @@ function SourceBadge({ source }: { source?: ValueSource }) {
   return (
     <Chip
       label={labels[source]}
-      color={colors[source]}
+      color={chipColors[source]}
       size="small"
       sx={{ ml: 0.5, fontSize: "0.65rem", height: "18px" }}
     />
@@ -96,6 +91,7 @@ interface GrdmSearchPanelProps {
 }
 
 function GrdmSearchPanel({ onSelect }: GrdmSearchPanelProps) {
+  const { t } = useTranslation("editProject")
   const { familyName, setFamilyName, users, isFetching, search } = useGrdmUserSearch()
   const [selectedUserId, setSelectedUserId] = useState<string>("")
 
@@ -114,12 +110,12 @@ function GrdmSearchPanel({ onSelect }: GrdmSearchPanelProps) {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: "0.75rem", p: "1rem", backgroundColor: colors.grey[50], borderRadius: "4px", border: `1px solid ${colors.grey[300]}` }}>
       <Typography variant="subtitle2" sx={{ fontWeight: "bold", color: colors.grey[700] }}>
-        GRDM ユーザーから検索
+        {t("personInfo.grdmSearch.title")}
       </Typography>
       <Box sx={{ display: "flex", flexDirection: "row", gap: "0.5rem", alignItems: "center" }}>
         <TextField
-          label="姓で検索"
-          placeholder="例: 山田"
+          label={t("personInfo.grdmSearch.label")}
+          placeholder={t("personInfo.grdmSearch.placeholder")}
           value={familyName}
           onChange={(e) => setFamilyName(e.target.value)}
           size="small"
@@ -136,14 +132,14 @@ function GrdmSearchPanel({ onSelect }: GrdmSearchPanelProps) {
           disabled={isFetching || !familyName.trim()}
           startIcon={isFetching ? <CircularProgress size={14} /> : undefined}
         >
-          {isFetching ? "検索中..." : "検索"}
+          {isFetching ? t("personInfo.grdmSearch.searching") : t("personInfo.grdmSearch.search")}
         </Button>
       </Box>
       {users.length > 0 && (
         <Box sx={{ display: "flex", flexDirection: "row", gap: "0.5rem", alignItems: "center" }}>
           <TextField
             select
-            label="検索結果から選択"
+            label={t("personInfo.grdmSearch.selectResult")}
             value={selectedUserId}
             onChange={(e) => setSelectedUserId(e.target.value)}
             size="small"
@@ -162,7 +158,7 @@ function GrdmSearchPanel({ onSelect }: GrdmSearchPanelProps) {
             onClick={handleSelect}
             disabled={!selectedUserId}
           >
-            この情報を入力
+            {t("personInfo.grdmSearch.applySelected")}
           </Button>
         </Box>
       )}
@@ -182,6 +178,7 @@ interface PersonInfoFormProps {
 }
 
 function PersonInfoForm({ index, totalCount, onSubmit, onClose }: PersonInfoFormProps) {
+  const { t } = useTranslation("editProject")
   const dialogMethods = useForm<PersonInfo>({
     defaultValues: initPersonInfo(),
     mode: "onBlur",
@@ -254,7 +251,7 @@ function PersonInfoForm({ index, totalCount, onSubmit, onClose }: PersonInfoForm
     <FormProvider {...dialogMethods}>
       <Box sx={{ p: "1.5rem", backgroundColor: colors.grey[50], borderTop: `1px solid ${colors.grey[300]}` }}>
         <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: "1rem" }}>
-          {isAddMode ? "担当者の追加" : "担当者の編集"}
+          {isAddMode ? t("personInfo.editForm.titleAdd") : t("personInfo.editForm.titleEdit")}
         </Typography>
 
         {/* GRDM User Search */}
@@ -264,90 +261,97 @@ function PersonInfoForm({ index, totalCount, onSubmit, onClose }: PersonInfoForm
 
         {/* Form fields */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          {fieldConfigs.map(({ key, label, required, helperText, type, options, selectMultiple, helpChip }) => (
-            <Controller
-              key={key}
-              name={key}
-              control={dialogMethods.control}
-              rules={required ? { required: `${label} は必須です` } : {}}
-              render={({ field, fieldState: { error } }) => {
-                const source = dialogMethods.watch("source")?.[key as keyof typeof dialogMethods.watch] as ValueSource | undefined
-                return (
-                  <FormControl fullWidth>
-                    <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-                      <OurFormLabel label={label} required={required} />
-                      {helpChip && <HelpChip text={helpChip} />}
-                      <SourceBadge source={source} />
-                    </Box>
-                    {!selectMultiple ? (
-                      <TextField
-                        {...field}
-                        fullWidth
-                        variant="outlined"
-                        error={!!error}
-                        helperText={error?.message ?? helperText}
-                        value={getValue(key)}
-                        onChange={(e) => updateValue(key, e.target.value as PersonInfo[typeof key])}
-                        type={type === "date" ? "date" : "text"}
-                        select={type === "select"}
-                        size="small"
-                        sx={{ maxWidth: "480px" }}
-                      >
-                        {type === "select" &&
-                          options!.map((option) => (
-                            <MenuItem key={option} value={option} children={option} />
-                          ))}
-                      </TextField>
-                    ) : (
-                      <>
-                        <Select
+          {fieldConfigs.map(({ key, labelKey, required, helperText, type, options, selectMultiple, helpChip }) => {
+            const label = t(labelKey)
+            return (
+              <Controller
+                key={key}
+                name={key}
+                control={dialogMethods.control}
+                rules={required ? { required: t("personInfo.validation.required", { label }) } : {}}
+                render={({ field, fieldState: { error } }) => {
+                  const source = dialogMethods.watch("source")?.[key as keyof typeof dialogMethods.watch] as ValueSource | undefined
+                  return (
+                    <FormControl fullWidth>
+                      <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                        <OurFormLabel label={label} required={required} />
+                        {helpChip && <HelpChip text={helpChip} />}
+                        <SourceBadge source={source} />
+                      </Box>
+                      {!selectMultiple ? (
+                        <TextField
                           {...field}
-                          value={field.value ?? []}
                           fullWidth
                           variant="outlined"
                           error={!!error}
-                          multiple
+                          helperText={error?.message ?? helperText}
+                          value={getValue(key)}
+                          onChange={(e) => updateValue(key, e.target.value as PersonInfo[typeof key])}
+                          type={type === "date" ? "date" : "text"}
+                          select={type === "select"}
                           size="small"
                           sx={{ maxWidth: "480px" }}
-                          onChange={(e) => {
-                            field.onChange(e)
-                            const currentSource = dialogMethods.getValues("source") ?? {}
-                            dialogMethods.setValue("source", { ...currentSource, [key]: "manual" } as never)
-                          }}
-                          renderValue={(selected) => (
-                            <Box sx={{ display: "flex", flexDirection: "row", gap: "0.5rem" }}>
-                              {(selected as unknown as string[]).map((value) => (
-                                <Chip key={value} label={value} />
-                              ))}
-                            </Box>
-                          )}
                         >
-                          {options!.map((option) => (
-                            <MenuItem key={option} value={option} children={option} />
-                          ))}
-                        </Select>
-                        <FormHelperText error={!!error} children={error?.message ?? helperText} />
-                      </>
-                    )}
-                  </FormControl>
-                )
-              }}
-            />
-          ))}
+                          {type === "select" &&
+                            options!.map((option) => (
+                              <MenuItem key={option} value={option}>
+                                {t(`enums.personRole.${option}`)}
+                              </MenuItem>
+                            ))}
+                        </TextField>
+                      ) : (
+                        <>
+                          <Select
+                            {...field}
+                            value={field.value ?? []}
+                            fullWidth
+                            variant="outlined"
+                            error={!!error}
+                            multiple
+                            size="small"
+                            sx={{ maxWidth: "480px" }}
+                            onChange={(e) => {
+                              field.onChange(e)
+                              const currentSource = dialogMethods.getValues("source") ?? {}
+                              dialogMethods.setValue("source", { ...currentSource, [key]: "manual" } as never)
+                            }}
+                            renderValue={(selected) => (
+                              <Box sx={{ display: "flex", flexDirection: "row", gap: "0.5rem" }}>
+                                {(selected as unknown as string[]).map((value) => (
+                                  <Chip key={value} label={t(`enums.personRole.${value}`)} />
+                                ))}
+                              </Box>
+                            )}
+                          >
+                            {options!.map((option) => (
+                              <MenuItem key={option} value={option}>
+                                {t(`enums.personRole.${option}`)}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                          <FormHelperText error={!!error} children={error?.message ?? helperText} />
+                        </>
+                      )}
+                    </FormControl>
+                  )
+                }}
+              />
+            )
+          })}
         </Box>
 
         {/* Actions */}
         <Box sx={{ display: "flex", flexDirection: "row", gap: "1rem", mt: "1.5rem", justifyContent: "flex-start" }}>
           <Button
             type="submit"
-            children={isAddMode ? "追加" : "保存"}
+            children={isAddMode ? t("personInfo.editForm.add") : t("personInfo.editForm.save")}
             variant="contained"
             color="secondary"
             disabled={isSubmitted && !isValid}
             onClick={dialogMethods.handleSubmit(handleSubmit)}
           />
           <Button
-            children="キャンセル"
+            children={t("personInfo.editForm.cancel")}
             onClick={onClose}
             variant="outlined"
             color="secondary"
@@ -368,6 +372,7 @@ interface PersonInfoSectionProps {
 }
 
 export default function PersonInfoSection({ sx }: PersonInfoSectionProps) {
+  const { t } = useTranslation("editProject")
   const { control } = useFormContext<DmpFormValues>()
   const { append, remove, move, update } = useFieldArray<DmpFormValues, "dmp.personInfo">({
     control,
@@ -400,7 +405,7 @@ export default function PersonInfoSection({ sx }: PersonInfoSectionProps) {
       )
     })
     if (isDuplicate) {
-      showSnackbar("同じ担当者がすでに登録されています", "warning")
+      showSnackbar(t("personInfo.validation.duplicate"), "warning")
       return
     }
 
@@ -413,7 +418,7 @@ export default function PersonInfoSection({ sx }: PersonInfoSectionProps) {
           return p.role.includes(role)
         })
         if (alreadyExists) {
-          showSnackbar(`「${role}」はすでに登録されています。一名のみ登録できます。`, "error")
+          showSnackbar(t("personInfo.validation.uniqueRole", { role: t(`enums.personRole.${role}`) }), "error")
           return
         }
       }
@@ -453,7 +458,7 @@ export default function PersonInfoSection({ sx }: PersonInfoSectionProps) {
 
   return (
     <Box sx={{ ...sx, display: "flex", flexDirection: "column" }}>
-      <SectionHeader text="担当者情報" />
+      <SectionHeader text={t("personInfo.sectionTitle")} />
       <TableContainer component={Paper} variant="outlined" sx={{
         borderBottom: "none",
         mt: "1rem",
@@ -463,7 +468,15 @@ export default function PersonInfoSection({ sx }: PersonInfoSectionProps) {
         <Table sx={{ minWidth: theme.breakpoints.values.md }}>
           <TableHead sx={{ backgroundColor: colors.grey[100] }}>
             <TableRow>
-              {["役割", "名前", "e-Rad 研究者番号", "ORCID", "所属機関", "連絡先", ""].map((header, index) => (
+              {[
+                t("personInfo.colRole"),
+                t("personInfo.colName"),
+                t("personInfo.colERadId"),
+                t("personInfo.colOrcid"),
+                t("personInfo.colAffiliation"),
+                t("personInfo.colContact"),
+                "",
+              ].map((header, index) => (
                 <TableCell
                   key={index}
                   children={header}
@@ -479,7 +492,7 @@ export default function PersonInfoSection({ sx }: PersonInfoSectionProps) {
                 <TableRow>
                   <TableCell sx={{ p: "0.5rem 1rem" }}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                      {personInfo.role.join(", ")}
+                      {personInfo.role.map((r) => t(`enums.personRole.${r}`)).join(", ")}
                       <SourceBadge source={personInfo.source?.role} />
                     </Box>
                   </TableCell>
@@ -535,14 +548,14 @@ export default function PersonInfoSection({ sx }: PersonInfoSectionProps) {
                     <Button
                       variant="outlined"
                       color="primary"
-                      children={openIndex === index ? "閉じる" : "編集"}
+                      children={openIndex === index ? t("personInfo.editClose") : t("personInfo.editButton")}
                       startIcon={openIndex === index ? <ExpandLessOutlined /> : <EditOutlined />}
                       onClick={() => openIndex === index ? handleClose() : handleOpen(index)}
                     />
                     <Button
                       variant="outlined"
                       color="error"
-                      children="削除"
+                      children={t("personInfo.deleteButton")}
                       startIcon={<DeleteOutline />}
                       onClick={() => setPendingDeleteIndex(index)}
                     />
@@ -587,7 +600,7 @@ export default function PersonInfoSection({ sx }: PersonInfoSectionProps) {
         color="primary"
         onClick={() => handleOpen(personInfos.length)}
         sx={{ width: "180px", mt: "1rem" }}
-        children="担当者を追加する"
+        children={t("personInfo.addPerson")}
         startIcon={<AddOutlined />}
       />
 
@@ -600,12 +613,12 @@ export default function PersonInfoSection({ sx }: PersonInfoSectionProps) {
         closeAfterTransition={false}
       >
         <DialogTitle sx={{ mt: "0.5rem", mx: "1rem" }}>
-          {"この担当者情報を削除しますか？"}
+          {t("personInfo.deleteDialog.title")}
         </DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: "1rem", mt: "0.5rem", mx: "1rem" }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             <Typography>
-              {"担当者情報を削除すると、関連する研究データ情報も削除されます。"}
+              {t("personInfo.deleteDialog.description")}
             </Typography>
           </Box>
         </DialogContent>
@@ -614,13 +627,13 @@ export default function PersonInfoSection({ sx }: PersonInfoSectionProps) {
             variant="contained"
             color="secondary"
             onClick={confirmDelete}
-            children="削除する"
+            children={t("personInfo.deleteDialog.confirm")}
           />
           <Button
             variant="outlined"
             color="secondary"
             onClick={() => setPendingDeleteIndex(null)}
-            children="キャンセル"
+            children={t("personInfo.deleteDialog.cancel")}
           />
         </DialogActions>
       </Dialog>

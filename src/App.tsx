@@ -1,3 +1,4 @@
+import "@/i18n"
 import CssBaseline from "@mui/material/CssBaseline"
 import { ThemeProvider } from "@mui/material/styles"
 import { QueryClientProvider } from "@tanstack/react-query"

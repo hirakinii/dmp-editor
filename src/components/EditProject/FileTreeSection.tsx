@@ -11,6 +11,7 @@ import { SxProps } from "@mui/system"
 import { TreeItem, SimpleTreeView } from "@mui/x-tree-view"
 import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { useRecoilValue } from "recoil"
 
 import SectionHeader from "@/components/EditProject/SectionHeader"
@@ -95,10 +96,10 @@ const createLoadingNode = (projectId: string): TreeNode => ({
   type: "loading",
 })
 
-const createErrorNode = (projectId: string): TreeNode => ({
+const createErrorNode = (projectId: string, label = "Load error"): TreeNode => ({
   projectId,
   nodeId: `error-${crypto.randomUUID()}`,
-  label: "読み込みエラーが発生しました",
+  label,
   children: [],
   type: "error",
 })
@@ -185,6 +186,7 @@ const allTreeNode = (tree: FileTree): TreeNode[] => {
 }
 
 export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) {
+  const { t } = useTranslation("editProject")
   const token = useRecoilValue(tokenAtom)
   const linkedProjects = useWatch<DmpFormValues>({
     name: "dmp.linkedGrdmProjects",
@@ -245,7 +247,7 @@ export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) 
         setTree((prevTree) => updateNodeInTree(prevTree, firstNode, { children: fetchedNodes }))
       })
       .catch(() => {
-        const errorNode = createErrorNode(firstNode.projectId)
+        const errorNode = createErrorNode(firstNode.projectId, t("fileTree.loadError"))
         setTree((prevTree) => updateNodeInTree(prevTree, firstNode, { children: [errorNode] }))
       })
       .finally(() => {
@@ -272,7 +274,7 @@ export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) 
         setTree((prevTree) => updateNodeInTree(prevTree, currentNode, { children: fetchedNodes }))
       })
       .catch(() => {
-        const errorNode = createErrorNode(currentNode.projectId)
+        const errorNode = createErrorNode(currentNode.projectId, t("fileTree.loadError"))
         setTree((prevTree) => updateNodeInTree(prevTree, currentNode, { children: [errorNode] }))
       })
       .finally(() => {
@@ -303,7 +305,7 @@ export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) 
         setTree((prevTree) => updateNodeInTree(prevTree, node, { children: fetchedNodes }))
       })
       .catch(() => {
-        const errorNode = createErrorNode(node.projectId)
+        const errorNode = createErrorNode(node.projectId, t("fileTree.loadError"))
         setTree((prevTree) => updateNodeInTree(prevTree, node, { children: [errorNode] }))
       })
       .finally(() => {
@@ -331,7 +333,7 @@ export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) 
       setTree(updatedTree)
       return updatedNode ?? null
     } catch {
-      const errorNode = createErrorNode(node.projectId)
+      const errorNode = createErrorNode(node.projectId, t("fileTree.loadError"))
       const updatedTree = updateNodeInTree(tree, node, { children: [errorNode] })
       setTree(updatedTree)
       return null
@@ -356,7 +358,7 @@ export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) 
         setTree((prevTree) => updateNodeInTree(prevTree, parentNode, { children: fetchedNodes }))
       })
       .catch(() => {
-        const errorNode = createErrorNode(parentNode.projectId)
+        const errorNode = createErrorNode(parentNode.projectId, t("fileTree.loadError"))
         setTree((prevTree) => updateNodeInTree(prevTree, parentNode, { children: [errorNode] }))
       })
       .finally(() => {
@@ -366,7 +368,7 @@ export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) 
           return newSet
         })
       })
-  }, [token, tree])
+  }, [token, tree, t])
 
   const renderTree = useCallback((node: TreeNode): React.ReactNode => {
     const isError = node.type === "error"
@@ -429,7 +431,7 @@ export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) 
                         ml: "0.5rem",
                       }}
                     >
-                      {"再試行"}
+                      {t("fileTree.retry")}
                     </Button>
                   )}
                 </>
@@ -456,7 +458,7 @@ export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) 
                   }}
                 >
                   <AddLinkOutlined fontSize="inherit" sx={{ mr: "0.5rem" }} />
-                  {"関連付ける"}
+                  {t("fileTree.link")}
                 </Button>
                 {node.type === "file" && (
                   <Chip
@@ -473,7 +475,7 @@ export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) 
         {node.children.map((child) => renderTree(child))}
       </TreeItem>
     )
-  }, [dataInfos, setOpenNodeId, retryFetch])
+  }, [dataInfos, setOpenNodeId, retryFetch, t])
 
   const renderDialogContent = () => {
     if (openNodeId === null) return null
@@ -530,7 +532,7 @@ export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) 
             sx={{ width: "130px" }}
             disabled={loading}
           >
-            {loading ? "関連付け中" : "関連付ける"}
+            {loading ? t("fileTree.selectDataDialog.linking") : t("fileTree.selectDataDialog.linkButton")}
           </Button>
           <Button
             variant="outlined"
@@ -540,7 +542,7 @@ export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) 
             startIcon={<LinkOffOutlined />}
             sx={{ width: "130px" }}
           >
-            {"関連付け解除"}
+            {t("fileTree.unlink")}
           </Button>
         </>
       )
@@ -563,7 +565,7 @@ export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) 
           startIcon={found ? <LinkOffOutlined /> : <AddLinkOutlined />}
           sx={{ width: "130px" }}
         >
-          {found ? "関連付け解除" : "関連付ける"}
+          {found ? t("fileTree.unlink") : t("fileTree.link")}
         </Button>
       )
     }
@@ -574,11 +576,11 @@ export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) 
           <Typography component="span" sx={{ fontFamily: "monospace" }}>
             {node.materialized_path ?? node.label}
           </Typography>
-          {" を関連付ける DMP 研究データを選択してください。"}
+          {t("fileTree.selectDataDialog.descriptionSuffix")}
         </Typography>
         {node.type === "folder" && (
           <Typography>
-            {"フォルダ以下の全てのファイルの関連付けと関連付け解除が可能です。"}
+            {t("fileTree.folderHelp")}
           </Typography>
         )}
 
@@ -590,7 +592,7 @@ export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) 
           <Table>
             <TableHead sx={{ backgroundColor: theme.palette.grey[100] }}>
               <TableRow>
-                {["名称", "分野", "種別", ""].map((header, index) => (
+                {[t("fileTree.colName"), t("fileTree.colField"), t("fileTree.colType"), ""].map((header, index) => (
                   <TableCell
                     key={index}
                     children={header}
@@ -625,15 +627,15 @@ export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) 
 
   return (
     <Box sx={{ ...sx, display: "flex", flexDirection: "column" }}>
-      <SectionHeader text="研究データと GRDM file の関連付け" />
+      <SectionHeader text={t("fileTree.sectionTitle")} />
       <Typography sx={{ mt: "0.5rem" }}>
-        {"DMP 上で作成した研究データと GRDM Project 上の file との関連付けを行います。"}
+        {t("fileTree.description")}
       </Typography>
 
       {tree.length === 0 ? (
         <Box sx={{ p: "0.5rem", mt: "1rem", border: `1px solid ${theme.palette.divider}`, borderRadius: "4px" }}>
           <Typography sx={{ mx: "1rem", my: "0.5rem" }}>
-            {"関連付けられた GRDM Project がありません。"}
+            {t("fileTree.noLinkedProjects")}
           </Typography>
         </Box>
       ) : (
@@ -678,7 +680,7 @@ export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) 
         closeAfterTransition={false}
       >
         <DialogTitle sx={{ mt: "0.5rem", mx: "1rem" }}>
-          {"関連付ける DMP 研究データの選択"}
+          {t("fileTree.selectDataDialog.title")}
         </DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: "1rem", mt: "0.5rem", mx: "1rem" }}>
           {renderDialogContent()}
@@ -689,7 +691,7 @@ export default function FileTreeSection({ sx, projects }: FileTreeSectionProps) 
             color="secondary"
             onClick={handleDialogClose}
           >
-            {"キャンセル"}
+            {t("fileTree.selectDataDialog.cancel")}
           </Button>
         </DialogActions>
       </Dialog>

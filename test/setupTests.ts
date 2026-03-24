@@ -1,6 +1,11 @@
 import "@testing-library/jest-dom"
 import { vi } from "vitest"
 
+import i18n from "@/i18n"
+
+// Fix the language to Japanese for all tests so Japanese-string assertions pass
+i18n.changeLanguage("ja")
+
 globalThis.DMP_EDITOR_BASE = "/"
 
 vi.mock("@/hooks/useAuth", () => ({

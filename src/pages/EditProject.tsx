@@ -11,6 +11,7 @@ import {
 } from "@mui/material"
 import { useEffect, useRef, useState } from "react"
 import { useForm, FormProvider } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { useParams } from "react-router-dom"
 
 import FormCard from "@/components/EditProject/FormCard"
@@ -28,6 +29,7 @@ interface EditProjectProps {
 }
 
 export default function EditProject({ isNew = false }: EditProjectProps) {
+  const { t } = useTranslation("editProject")
   const { projectId = "" } = useParams<{ projectId: string }>()
   const dmpQuery = useDmp(projectId, isNew)
   const userQuery = useUser()
@@ -104,7 +106,7 @@ export default function EditProject({ isNew = false }: EditProjectProps) {
       <Backdrop open={isSaving} sx={{ zIndex: (t) => t.zIndex.drawer + 1, flexDirection: "column", gap: 2 }}>
         <CircularProgress color="inherit" size={60} />
         <Typography sx={{ color: "white", fontSize: "1.2rem", fontWeight: "bold" }}>
-          {"GRDMに保存中..."}
+          {t("page.saving")}
         </Typography>
       </Backdrop>
       <FormProvider {...methods}>
@@ -121,18 +123,18 @@ export default function EditProject({ isNew = false }: EditProjectProps) {
       </FormProvider>
 
       <Dialog open={blocker.state === "blocked"} onClose={() => blocker.reset?.()}>
-        <DialogTitle>{"未保存の変更があります"}</DialogTitle>
+        <DialogTitle>{t("page.unsavedDialog.title")}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            {"保存せずにページを離れると、変更内容が失われます。続けますか？"}
+            {t("page.unsavedDialog.description")}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => blocker.reset?.()} color="primary">
-            {"このページに留まる"}
+            {t("page.unsavedDialog.stay")}
           </Button>
           <Button onClick={() => blocker.proceed?.()} color="error" autoFocus>
-            {"変更を破棄して離れる"}
+            {t("page.unsavedDialog.leave")}
           </Button>
         </DialogActions>
       </Dialog>

@@ -14,6 +14,7 @@ import type { StepIconProps } from "@mui/material"
 import { SxProps } from "@mui/system"
 import { useState } from "react"
 import { FieldPath, useFormContext } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 
 import DataInfoSection from "@/components/EditProject/DataInfoSection"
@@ -41,14 +42,6 @@ export interface FormCardProps {
   /** Called when the save mutation fails (to hide the loading overlay). */
   onSaveEnd: () => void
 }
-
-const STEPS = [
-  { label: "基本設定" },
-  { label: "プロジェクト情報" },
-  { label: "担当者情報" },
-  { label: "研究データ情報" },
-  { label: "GRDM 連携" },
-] as const
 
 const STEP_FIELDS: Record<number, FieldPath<DmpFormValues>[]> = {
   0: [
@@ -93,25 +86,8 @@ function CustomStepIcon(props: StepIconProps) {
   return <StepIcon {...rest} />
 }
 
-/** Converts a save error into a user-readable Japanese message. */
-function formatSaveError(error: unknown): string {
-  const prefix = "GRDMへの保存に失敗しました"
-  if (error instanceof PartialSaveError) {
-    return `${prefix}：プロジェクト名の変更は完了しましたが、DMP ファイルの保存に失敗しました。再度保存を実行してください。`
-  }
-  if (error instanceof Error) {
-    if (error.name === "AbortError" || error.message.toLowerCase().includes("timeout")) {
-      return `${prefix}：タイムアウト`
-    }
-    if (error.message.includes("429")) {
-      return `${prefix}：リクエスト数が上限を超えました (429)`
-    }
-    return `${prefix}：${error.message}`
-  }
-  return prefix
-}
-
 export default function FormCard({ sx, isNew = false, user, project, projects, isProjectsLoading = false, onSaveStart, onSaveEnd }: FormCardProps) {
+  const { t } = useTranslation("editProject")
   const { projectId = "" } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
   const { getValues, setValue, handleSubmit, formState, reset, trigger } = useFormContext<DmpFormValues>()
@@ -121,6 +97,32 @@ export default function FormCard({ sx, isNew = false, user, project, projects, i
   const [isSaving, setIsSaving] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
   const [stepErrors, setStepErrors] = useState<Set<number>>(new Set())
+
+  const STEPS = [
+    { label: t("formCard.steps.basicSettings") },
+    { label: t("formCard.steps.projectInfo") },
+    { label: t("formCard.steps.personInfo") },
+    { label: t("formCard.steps.dataInfo") },
+    { label: t("formCard.steps.grdmLink") },
+  ] as const
+
+  /** Converts a save error into a user-readable message. */
+  const formatSaveError = (error: unknown): string => {
+    const prefix = t("formCard.saveError.prefix")
+    if (error instanceof PartialSaveError) {
+      return t("formCard.saveError.partialSave")
+    }
+    if (error instanceof Error) {
+      if (error.name === "AbortError" || error.message.toLowerCase().includes("timeout")) {
+        return t("formCard.saveError.timeout")
+      }
+      if (error.message.includes("429")) {
+        return `${prefix}：リクエスト数が上限を超えました (429)`
+      }
+      return `${prefix}：${error.message}`
+    }
+    return prefix
+  }
 
   /** Validate the fields for a given step and update the stepErrors set. */
   const validateStepFields = async (stepIndex: number): Promise<boolean> => {
@@ -153,7 +155,7 @@ export default function FormCard({ sx, isNew = false, user, project, projects, i
       { projectId, isNew, formValues, currentProjectTitle: project?.title },
       {
         onSuccess: (newProjectId: string) => {
-          showSnackbar("DMPを保存しました", "success")
+          showSnackbar(t("formCard.saveDone"), "success")
           // reset() updates the RHF live store (isDirty = false) synchronously.
           // The useBlocker in EditProject reads from the live store via a stable
           // ref function, so navigate() called right after is not blocked.
@@ -206,7 +208,7 @@ export default function FormCard({ sx, isNew = false, user, project, projects, i
         <Typography
           sx={{ fontSize: "1.5rem" }}
           component="h1"
-          children={isNew ? "DMP Project の新規作成" : "DMP Project の編集"}
+          children={isNew ? t("formCard.titleNew") : t("formCard.titleEdit")}
         />
 
         <Stepper activeStep={activeStep} alternativeLabel nonLinear sx={{ mt: "1.5rem" }}>
@@ -253,11 +255,11 @@ export default function FormCard({ sx, isNew = false, user, project, projects, i
 
         <Box sx={{ display: "flex", flexDirection: "row", gap: "1rem", mt: "2rem", alignItems: "center" }}>
           <Button variant="outlined" onClick={handleBack} disabled={activeStep === 0}>
-            前へ
+            {t("formCard.back")}
           </Button>
           {activeStep < STEPS.length - 1 && (
             <Button variant="contained" onClick={handleNext}>
-              次へ
+              {t("formCard.next")}
             </Button>
           )}
           <Box sx={{ flexGrow: 1 }} />
@@ -270,7 +272,7 @@ export default function FormCard({ sx, isNew = false, user, project, projects, i
               startIcon={<SaveOutlined />}
               disabled={isButtonDisabled()}
             >
-              {"GRDM に保存する"}
+              {t("formCard.saveToGrdm")}
             </Button>
           )}
         </Box>

@@ -7,6 +7,7 @@ import {
 import { SxProps } from "@mui/system"
 import React, { useState } from "react"
 import { useFieldArray, useFormContext, useWatch, Controller } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 
 import HelpChip from "@/components/EditProject/HelpChip"
 import OurFormLabel from "@/components/EditProject/OurFormLabel"
@@ -15,99 +16,29 @@ import type { PersonInfo, ProjectInfo, DmpFormValues } from "@/dmp"
 import { useKakenProject } from "@/hooks/useKakenProject"
 import { useSnackbar } from "@/hooks/useSnackbar"
 
-interface FormData {
+interface FormDataConfig {
   key: keyof ProjectInfo
-  label: string
+  labelKey: string
   required: boolean
   width: string
   helperText?: string
   type: "text" | "date" | "select"
   options?: string[]
-  helpChip?: React.ReactNode
+  helpChipKey?: "programName" | "programCode"
 }
 
-const formData: FormData[] = [
-  {
-    key: "fundingAgency",
-    label: "資金配分機関情報",
-    required: true,
-    width: "480px",
-    type: "text",
-  },
-  {
-    key: "programName",
-    label: "プログラム名 (事業名・種目名)",
-    required: false,
-    width: "480px",
-    type: "text",
-    helpChip: (
-      <>
-        {"NISTEP 体系的番号一覧 ("}
-        <Link
-          href="https://www.nistep.go.jp/taikei"
-          target="_blank"
-          rel="noopener noreferrer"
-          children="https://www.nistep.go.jp/taikei"
-        />
-        {") の「事業・制度名」を記載してください。"}
-      </>
-    ),
-  },
-  {
-    key: "programCode",
-    label: "体系的番号におけるプログラム情報コード",
-    required: false,
-    width: "480px",
-    type: "text",
-    helpChip: (
-      <>
-        {"NISTEP 体系的番号一覧 ("}
-        <Link
-          href="https://www.nistep.go.jp/taikei"
-          target="_blank"
-          rel="noopener noreferrer"
-          children="https://www.nistep.go.jp/taikei"
-        />
-        {") に掲載されている「機関コード」および「施策・事業の特定コード」を表すコードを記載してください。"}
-      </>
-    ),
-  },
-  {
-    key: "projectCode",
-    label: "体系的番号",
-    required: true,
-    width: "480px",
-    type: "text",
-  },
-  {
-    key: "projectName",
-    label: "プロジェクト名",
-    required: true,
-    width: "480px",
-    type: "text",
-  },
-  {
-    key: "adoptionYear",
-    label: "採択年度",
-    required: false,
-    width: "480px",
-    type: "text",
-  },
-  {
-    key: "startYear",
-    label: "事業開始年度",
-    required: false,
-    width: "480px",
-    type: "text",
-  },
-  {
-    key: "endYear",
-    label: "事業終了年度",
-    required: false,
-    width: "480px",
-    type: "text",
-  },
+const formDataConfig: FormDataConfig[] = [
+  { key: "fundingAgency", labelKey: "projectInfo.fields.fundingAgency", required: true, width: "480px", type: "text" },
+  { key: "programName", labelKey: "projectInfo.fields.programName", required: false, width: "480px", type: "text", helpChipKey: "programName" },
+  { key: "programCode", labelKey: "projectInfo.fields.programCode", required: false, width: "480px", type: "text", helpChipKey: "programCode" },
+  { key: "projectCode", labelKey: "projectInfo.fields.projectCode", required: true, width: "480px", type: "text" },
+  { key: "projectName", labelKey: "projectInfo.fields.projectName", required: true, width: "480px", type: "text" },
+  { key: "adoptionYear", labelKey: "projectInfo.fields.adoptionYear", required: false, width: "480px", type: "text" },
+  { key: "startYear", labelKey: "projectInfo.fields.startYear", required: false, width: "480px", type: "text" },
+  { key: "endYear", labelKey: "projectInfo.fields.endYear", required: false, width: "480px", type: "text" },
 ]
+
+const NISTEP_URL = "https://www.nistep.go.jp/taikei"
 
 interface ProjectInfoSectionProps {
   sx?: SxProps
@@ -138,21 +69,22 @@ function DuplicatePersonDialog({
   onSkipAll,
   onClose,
 }: DuplicatePersonDialogProps) {
+  const { t } = useTranslation("editProject")
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" closeAfterTransition={false}>
       <DialogTitle sx={{ mt: "0.5rem", mx: "1rem" }}>
-        同名の担当者が存在します
+        {t("projectInfo.duplicateDialog.title")}
       </DialogTitle>
       <DialogContent sx={{ mx: "1rem", mt: "0.5rem" }}>
         <Typography sx={{ mb: "1rem" }}>
-          KAKEN から取得した以下の担当者はすでに登録されています。担当者情報を確認してください。
+          {t("projectInfo.duplicateDialog.description")}
         </Typography>
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: "bold" }}>項目</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>既存の情報</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>KAKEN の情報</TableCell>
+              <TableCell sx={{ fontWeight: "bold" }}>{t("projectInfo.duplicateDialog.colItem")}</TableCell>
+              <TableCell sx={{ fontWeight: "bold" }}>{t("projectInfo.duplicateDialog.colExisting")}</TableCell>
+              <TableCell sx={{ fontWeight: "bold" }}>{t("projectInfo.duplicateDialog.colKaken")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -166,17 +98,17 @@ function DuplicatePersonDialog({
                     </TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell>役割</TableCell>
+                    <TableCell>{t("projectInfo.duplicateDialog.rowRole")}</TableCell>
                     <TableCell>{existing?.role.join(", ")}</TableCell>
                     <TableCell>{kakenPerson.role.join(", ")}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell>所属機関</TableCell>
+                    <TableCell>{t("projectInfo.duplicateDialog.rowAffiliation")}</TableCell>
                     <TableCell>{existing?.affiliation}</TableCell>
                     <TableCell>{kakenPerson.affiliation}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell>e-Rad 研究者番号</TableCell>
+                    <TableCell>{t("projectInfo.duplicateDialog.rowERadId")}</TableCell>
                     <TableCell>{existing?.eRadResearcherId ?? ""}</TableCell>
                     <TableCell>{kakenPerson.eRadResearcherId ?? ""}</TableCell>
                   </TableRow>
@@ -188,10 +120,10 @@ function DuplicatePersonDialog({
       </DialogContent>
       <DialogActions sx={{ m: "0.5rem 1.5rem 1.5rem" }}>
         <Button variant="contained" color="secondary" onClick={onSkipAll}>
-          スキップして閉じる
+          {t("projectInfo.duplicateDialog.skipAll")}
         </Button>
         <Button variant="outlined" color="secondary" onClick={onClose}>
-          キャンセル
+          {t("projectInfo.duplicateDialog.cancel")}
         </Button>
       </DialogActions>
     </Dialog>
@@ -203,6 +135,7 @@ function DuplicatePersonDialog({
 // ============================================================
 
 function KakenSearchPanel() {
+  const { t } = useTranslation("editProject")
   const { setValue } = useFormContext<DmpFormValues>()
   const { append } = useFieldArray<DmpFormValues, "dmp.personInfo">({
     name: "dmp.personInfo",
@@ -263,15 +196,15 @@ function KakenSearchPanel() {
           setDuplicateEntries(duplicates)
           setDuplicateDialogOpen(true)
         } else {
-          showSnackbar(`${toAppend.length} 名の担当者を追加しました`, "success")
+          showSnackbar(t("projectInfo.kakenSearch.addedPersons", { count: toAppend.length }), "success")
         }
       } else {
-        showSnackbar("プロジェクト情報を自動補完しました", "success")
+        showSnackbar(t("projectInfo.kakenSearch.autocompleted"), "success")
       }
     } else if (result.isSuccess && result.data === null) {
-      showSnackbar("KAKEN番号に該当するプロジェクトが見つかりませんでした", "warning")
+      showSnackbar(t("projectInfo.kakenSearch.notFound"), "warning")
     } else if (result.isError) {
-      showSnackbar("情報の取得に失敗しました", "error")
+      showSnackbar(t("projectInfo.kakenSearch.fetchFailed"), "error")
     }
   }
 
@@ -281,8 +214,8 @@ function KakenSearchPanel() {
     const added = pendingPersonInfos.length
     showSnackbar(
       added > 0
-        ? `${added} 名の担当者を追加しました（重複 ${duplicateEntries.length} 名はスキップしました）`
-        : `重複する担当者 ${duplicateEntries.length} 名をスキップしました`,
+        ? t("projectInfo.kakenSearch.addedPersonsWithSkip", { count: added, skip: duplicateEntries.length })
+        : t("projectInfo.kakenSearch.skippedPersons", { count: duplicateEntries.length }),
       "info",
     )
   }
@@ -297,8 +230,8 @@ function KakenSearchPanel() {
       <Box sx={{ display: "flex", flexDirection: "column", gap: "0.5rem", mb: "1rem" }}>
         <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "0.5rem" }}>
           <TextField
-            label="KAKEN番号で自動補完"
-            placeholder="例: 23K12345"
+            label={t("projectInfo.kakenSearch.label")}
+            placeholder={t("projectInfo.kakenSearch.placeholder")}
             value={kakenNumber}
             onChange={(e) => setKakenNumber(e.target.value)}
             size="small"
@@ -323,7 +256,7 @@ function KakenSearchPanel() {
             disabled={isFetching || !kakenNumber.trim()}
             startIcon={isFetching ? <CircularProgress size={16} /> : undefined}
           >
-            {isFetching ? "検索中..." : "検索"}
+            {isFetching ? t("projectInfo.kakenSearch.searching") : t("projectInfo.kakenSearch.search")}
           </Button>
         </Box>
       </Box>
@@ -340,47 +273,59 @@ function KakenSearchPanel() {
 }
 
 export default function ProjectInfoSection({ sx }: ProjectInfoSectionProps) {
+  const { t } = useTranslation("editProject")
   const { control } = useFormContext<DmpFormValues>()
+
+  const buildHelpChip = (helpChipKey: "programName" | "programCode") => (
+    <>
+      {t(`projectInfo.helpChip.${helpChipKey}Part1`)}
+      <Link href={NISTEP_URL} target="_blank" rel="noopener noreferrer" children={NISTEP_URL} />
+      {t(`projectInfo.helpChip.${helpChipKey}Part2`)}
+    </>
+  )
 
   return (
     <Box sx={{ ...sx, display: "flex", flexDirection: "column" }}>
-      <SectionHeader text="プロジェクト情報" />
+      <SectionHeader text={t("projectInfo.sectionTitle")} />
       <Box sx={{ display: "flex", flexDirection: "column", gap: "1rem", mt: "1rem" }}>
         <KakenSearchPanel />
-        {formData.map(({ key, label, required, width, helperText, type, options, helpChip }) => (
-          <Controller
-            key={key}
-            name={`dmp.projectInfo.${key}`}
-            control={control}
-            rules={required ? { required: `${label} は必須です` } : {}}
-            render={({ field, fieldState: { error } }) => (
-              <FormControl fullWidth>
-                <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-                  <OurFormLabel label={label} required={required} />
-                  {helpChip && <HelpChip text={helpChip} />}
-                </Box>
-                <TextField
-                  {...field}
-                  fullWidth
-                  variant="outlined"
-                  error={!!error}
-                  helperText={error?.message ?? helperText}
-                  value={field.value ?? ""}
-                  onChange={(e) => field.onChange(e.target.value === "" ? undefined : e.target.value)}
-                  sx={{ maxWidth: width }}
-                  type={type === "date" ? "date" : "text"}
-                  select={type === "select"}
-                  size="small"
-                >
-                  {type === "select" &&
-                    options!.map((option) => (
-                      <MenuItem key={option} value={option} children={option} />
-                    ))}
-                </TextField>
-              </FormControl>
-            )}
-          />
-        ))}
+        {formDataConfig.map(({ key, labelKey, required, width, helperText, type, options, helpChipKey }) => {
+          const label = t(labelKey)
+          return (
+            <Controller
+              key={key}
+              name={`dmp.projectInfo.${key}`}
+              control={control}
+              rules={required ? { required: t("projectInfo.validation.required", { label }) } : {}}
+              render={({ field, fieldState: { error } }) => (
+                <FormControl fullWidth>
+                  <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                    <OurFormLabel label={label} required={required} />
+                    {helpChipKey && <HelpChip text={buildHelpChip(helpChipKey)} />}
+                  </Box>
+                  <TextField
+                    {...field}
+                    fullWidth
+                    variant="outlined"
+                    error={!!error}
+                    helperText={error?.message ?? helperText}
+                    value={field.value ?? ""}
+                    onChange={(e) => field.onChange(e.target.value === "" ? undefined : e.target.value)}
+                    sx={{ maxWidth: width }}
+                    type={type === "date" ? "date" : "text"}
+                    select={type === "select"}
+                    size="small"
+                  >
+                    {type === "select" &&
+                      options!.map((option) => (
+                        <MenuItem key={option} value={option} children={option} />
+                      ))}
+                  </TextField>
+                </FormControl>
+              )}
+            />
+          )
+        })}
       </Box>
     </Box>
   )

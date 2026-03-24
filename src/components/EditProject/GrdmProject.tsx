@@ -1,6 +1,7 @@
 import OpenInNew from "@mui/icons-material/OpenInNew"
 import { Box, Typography, Link } from "@mui/material"
 import { SxProps } from "@mui/system"
+import { useTranslation } from "react-i18next"
 
 import { ProjectInfo } from "@/grdmClient"
 
@@ -11,24 +12,26 @@ export interface GrdmProjectProps {
 }
 
 function NewGrdmProject() {
+  const { t } = useTranslation("editProject")
   return (
     <Typography>
-      {"DMP の情報は、新しく作成する GRDM プロジェクトに保存されます。"}
+      {t("grdmProject.newDescription1")}
       <br />
-      {"保存先プロジェクト名は「プロジェクト情報」で入力する「プロジェクト名」をもとに"}
+      {t("grdmProject.newDescription2")}
       <Typography component="span" sx={{ fontFamily: "monospace" }}>
-        {"DMP-[プロジェクト名]"}
+        {t("grdmProject.newDescription3")}
       </Typography>
-      {"として自動決定されます。"}
+      {t("grdmProject.newDescription4")}
     </Typography>
   )
 }
 
 function ExistingGrdmProject({ project }: { project?: ProjectInfo | null }) {
+  const { t } = useTranslation("editProject")
   return (
     <>
       <Typography>
-        {"DMP Project は、以下の GRDM プロジェクト内に保存されています。"}
+        {t("grdmProject.existingDescription")}
       </Typography>
       {project?.html && (
         <Link

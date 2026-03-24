@@ -1,4 +1,5 @@
 import { Box, Typography, Paper, Button } from "@mui/material"
+import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
 import Frame from "@/components/Frame"
@@ -16,15 +17,12 @@ export default function StatusPage({
   error,
   resetErrorBoundary,
 }: StatusPageProps) {
+  const { t } = useTranslation("status")
   const navigate = useNavigate()
   const isErrorPage = type === "error"
 
-  const title = isErrorPage
-    ? "エラーが発生しました。"
-    : "ページが見つかりません"
-  const description = isErrorPage
-    ? "想定外のエラーが発生しました。お手数ですが、以下の詳細情報を開発者にお伝え下さい。"
-    : "お探しのページは存在しないか、移動された可能性があります。\nURL を確認するか、ホームページに戻ってください。"
+  const title = isErrorPage ? t("error.title") : t("notFound.title")
+  const description = isErrorPage ? t("error.description") : t("notFound.description")
 
   let errorMessage = ""
   let errorStack = ""
@@ -61,7 +59,7 @@ export default function StatusPage({
         {isErrorPage && (
           <>
             <Box sx={{ mt: "1.5rem" }}>
-              <Typography sx={{ fontWeight: "bold" }}>エラーメッセージ</Typography>
+              <Typography sx={{ fontWeight: "bold" }}>{t("error.errorMessage")}</Typography>
               <Paper variant="outlined" sx={{ mt: "0.5rem", p: "0.5rem 1rem" }}>
                 <Box sx={{ fontFamily: "monospace", overflowX: "auto" }}>
                   <pre>{errorMessage}</pre>
@@ -69,7 +67,7 @@ export default function StatusPage({
               </Paper>
             </Box>
             <Box sx={{ mt: "1rem" }}>
-              <Typography sx={{ fontWeight: "bold" }}>スタックトレース</Typography>
+              <Typography sx={{ fontWeight: "bold" }}>{t("error.stackTrace")}</Typography>
               <Paper variant="outlined" sx={{ mt: "0.5rem", p: "0.5rem 1rem" }}>
                 <Box sx={{ fontFamily: "monospace", overflowX: "auto" }}>
                   <pre>{errorStack}</pre>
@@ -80,7 +78,7 @@ export default function StatusPage({
         )}
         <Box sx={{ display: "flex", gap: "1.5rem", mt: "1.5rem" }}>
           <Button variant="contained" color="secondary" onClick={handleRetry}>
-            {isErrorPage ? "再試行する" : "ホームへ戻る"}
+            {isErrorPage ? t("error.retry") : t("notFound.backToHome")}
           </Button>
           {isErrorPage && (
             <Button
@@ -89,7 +87,7 @@ export default function StatusPage({
               onClick={handleClearAndRetry}
               sx={{ textTransform: "none" }}
             >
-              Cache をクリアして再試行する
+              {t("error.clearAndRetry")}
             </Button>
           )}
         </Box>
