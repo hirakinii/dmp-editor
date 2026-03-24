@@ -47,6 +47,10 @@
   },
   "linkedGrdmProjectsSection": {
     "empty": "No GRDM projects are linked. You can link projects from the edit screen.",
-    "loadingProject": "Loading..."
+    "loadingProject": "Loading...",
+    "colProjectName": "GRDM Project Name",
+    "colProjectId": "GRDM Project ID",
+    "colDateCreated": "Created",
+    "colDateModified": "Last Modified"
   }
 }

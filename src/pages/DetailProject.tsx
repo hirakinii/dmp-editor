@@ -5,8 +5,6 @@ import {
   CircularProgress,
   IconButton,
   Link,
-  List,
-  ListItem,
   Table,
   TableBody,
   TableCell,
@@ -141,19 +139,26 @@ function LinkedGrdmProjectItem({ projectId }: { projectId: string }) {
   const projectQuery = useProjectInfo(projectId)
 
   const href = projectQuery.data?.html ?? `${GRDM_CONFIG.BASE_URL}/${projectId}`
-  let label: string
+  let nameLabel: string
   if (projectQuery.isLoading) {
-    label = t("linkedGrdmProjectsSection.loadingProject")
+    nameLabel = t("linkedGrdmProjectsSection.loadingProject")
   } else {
-    label = projectQuery.data?.title ?? projectId
+    nameLabel = projectQuery.data?.title ?? projectId
   }
+  const dateCreated = projectQuery.data?.dateCreated?.slice(0, 10) ?? "—"
+  const dateModified = projectQuery.data?.dateModified?.slice(0, 10) ?? "—"
 
   return (
-    <ListItem sx={{ py: "0.2rem", pl: 0 }}>
-      <Link href={href} target="_blank" rel="noopener noreferrer" underline="hover">
-        {label}
-      </Link>
-    </ListItem>
+    <TableRow>
+      <TableCell>
+        <Link href={href} target="_blank" rel="noopener noreferrer" underline="hover">
+          {nameLabel}
+        </Link>
+      </TableCell>
+      <TableCell>{projectId}</TableCell>
+      <TableCell>{dateCreated}</TableCell>
+      <TableCell>{dateModified}</TableCell>
+    </TableRow>
   )
 }
 
@@ -169,11 +174,31 @@ function LinkedGrdmProjectsSection({ projects }: { projects: LinkedGrdmProject[]
   }
 
   return (
-    <List dense disablePadding sx={{ mt: "0.5rem" }}>
-      {projects.map((p) => (
-        <LinkedGrdmProjectItem key={p.projectId} projectId={p.projectId} />
-      ))}
-    </List>
+    <TableContainer component={Paper} variant="outlined" sx={{ mt: "0.5rem" }}>
+      <Table size="small">
+        <TableHead sx={{ backgroundColor: colors.grey[100] }}>
+          <TableRow>
+            <TableCell sx={{ fontWeight: "bold" }}>
+              {t("linkedGrdmProjectsSection.colProjectName")}
+            </TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>
+              {t("linkedGrdmProjectsSection.colProjectId")}
+            </TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>
+              {t("linkedGrdmProjectsSection.colDateCreated")}
+            </TableCell>
+            <TableCell sx={{ fontWeight: "bold" }}>
+              {t("linkedGrdmProjectsSection.colDateModified")}
+            </TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {projects.map((p) => (
+            <LinkedGrdmProjectItem key={p.projectId} projectId={p.projectId} />
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
   )
 }
 

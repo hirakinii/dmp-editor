@@ -264,7 +264,7 @@ describe("DetailProject", () => {
       expect(link).toHaveAttribute("rel", "noopener noreferrer")
     })
 
-    it("falls back to projectId as link text while loading", () => {
+    it("shows loading label in name cell while loading", () => {
       mockUseProjectInfo.mockReturnValue({ isLoading: true, data: null, error: null })
       mockUseDmp.mockReturnValue({
         isLoading: false,
@@ -275,6 +275,76 @@ describe("DetailProject", () => {
       expect(screen.getByText("読み込み中...")).toBeInTheDocument()
     })
 
+    it("shows project ID in the ID column", async () => {
+      mockUseProjectInfo.mockReturnValue({
+        isLoading: false,
+        data: { id: "proj-abc",
+          title: "テストプロジェクト",
+          html: "https://rdm.nii.ac.jp/proj-abc",
+          dateCreated: "2023-07-04T04:08:12.597030",
+          dateModified: "2024-01-15T12:00:00.000000" },
+        error: null,
+      })
+      mockUseDmp.mockReturnValue({
+        isLoading: false,
+        data: { ...mockDmp, linkedGrdmProjects: [{ projectId: "proj-abc" }] },
+        error: null,
+      })
+      renderDetailProject()
+      expect(await screen.findByText("proj-abc")).toBeInTheDocument()
+    })
+
+    it("formats and shows dateCreated as YYYY-MM-DD", async () => {
+      mockUseProjectInfo.mockReturnValue({
+        isLoading: false,
+        data: { id: "proj-abc",
+          title: "テストプロジェクト",
+          html: "https://rdm.nii.ac.jp/proj-abc",
+          dateCreated: "2023-07-04T04:08:12.597030",
+          dateModified: "2024-01-15T12:00:00.000000" },
+        error: null,
+      })
+      mockUseDmp.mockReturnValue({
+        isLoading: false,
+        data: { ...mockDmp, linkedGrdmProjects: [{ projectId: "proj-abc" }] },
+        error: null,
+      })
+      renderDetailProject()
+      expect(await screen.findByText("2023-07-04")).toBeInTheDocument()
+    })
+
+    it("formats and shows dateModified as YYYY-MM-DD", async () => {
+      mockUseProjectInfo.mockReturnValue({
+        isLoading: false,
+        data: { id: "proj-abc",
+          title: "テストプロジェクト",
+          html: "https://rdm.nii.ac.jp/proj-abc",
+          dateCreated: "2023-07-04T04:08:12.597030",
+          dateModified: "2022-11-30T08:30:00.000000" },
+        error: null,
+      })
+      mockUseDmp.mockReturnValue({
+        isLoading: false,
+        data: { ...mockDmp, linkedGrdmProjects: [{ projectId: "proj-abc" }] },
+        error: null,
+      })
+      renderDetailProject()
+      expect(await screen.findByText("2022-11-30")).toBeInTheDocument()
+    })
+
+    it("shows — in date cells while loading", () => {
+      mockUseProjectInfo.mockReturnValue({ isLoading: true, data: null, error: null })
+      mockUseDmp.mockReturnValue({
+        isLoading: false,
+        data: { ...mockDmp, linkedGrdmProjects: [{ projectId: "proj-abc" }] },
+        error: null,
+      })
+      renderDetailProject()
+      // Two "—" cells: one for dateCreated and one for dateModified
+      const dashes = screen.getAllByText("—")
+      expect(dashes.length).toBeGreaterThanOrEqual(2)
+    })
+
     it("falls back to projectId as link text when useProjectInfo returns an error", () => {
       mockUseProjectInfo.mockReturnValue({ isLoading: false, data: null, error: new Error("fetch failed") })
       mockUseDmp.mockReturnValue({
@@ -283,7 +353,8 @@ describe("DetailProject", () => {
         error: null,
       })
       renderDetailProject()
-      expect(screen.getByText("proj-abc")).toBeInTheDocument()
+      // Name cell shows projectId as link, ID cell also shows projectId → multiple occurrences expected
+      expect(screen.getAllByText("proj-abc").length).toBeGreaterThanOrEqual(2)
     })
 
     it("renders multiple linked projects", async () => {
