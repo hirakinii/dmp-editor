@@ -914,7 +914,16 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
               <React.Fragment key={index}>
                 {/* Data row */}
                 <TableRow>
-                  <TableCell children={dataInfo.dataName} sx={{ p: "0.5rem 1rem" }} />
+                  <TableCell
+                    children={dataInfo.dataName}
+                    sx={{
+                      p: "0.5rem 1rem",
+                      maxWidth: { xs: "100%", md: 400 },
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  />
                   <TableCell children={dataInfo.researchField} sx={{ p: "0.5rem 1rem" }} />
                   <TableCell children={dataInfo.dataType} sx={{ p: "0.5rem 1rem" }} />
                   <TableCell sx={{ p: "0.5rem 1rem" }} align="right">
