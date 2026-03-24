@@ -4,7 +4,8 @@
     "copyAccessToken": "Copy Access Token",
     "copied": "Copied!",
     "signOut": "Sign Out",
-    "signedOut": "Signed out."
+    "signedOut": "Signed out.",
+    "manual": "Manual"
   },
   "language": {
     "ja": "日本語",
