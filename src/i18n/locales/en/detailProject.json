@@ -8,7 +8,8 @@
     "dmpInfo": "DMP Creation & Update Info",
     "projectInfo": "Research Project Info",
     "personInfo": "Personnel Info",
-    "dataInfo": "Research Data Info"
+    "dataInfo": "Research Data Info",
+    "linkedGrdmProjects": "Linked GRDM Projects"
   },
   "dmpMeta": {
     "dateCreated": "DMP Created",
@@ -43,5 +44,9 @@
     "colType": "Data Type",
     "colAccessRights": "Access Rights",
     "colAgency": "Data Management Agency"
+  },
+  "linkedGrdmProjectsSection": {
+    "empty": "No GRDM projects are linked. You can link projects from the edit screen.",
+    "loadingProject": "Loading..."
   }
 }

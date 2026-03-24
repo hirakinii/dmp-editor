@@ -12,10 +12,11 @@ import { theme } from "../../src/theme"
 
 // --- Mocks ---
 
-const { mockUseDmp, mockShowBoundary, mockExportToJspsExcel } = vi.hoisted(() => ({
+const { mockUseDmp, mockShowBoundary, mockExportToJspsExcel, mockUseProjectInfo } = vi.hoisted(() => ({
   mockUseDmp: vi.fn(),
   mockShowBoundary: vi.fn(),
   mockExportToJspsExcel: vi.fn(),
+  mockUseProjectInfo: vi.fn(),
 }))
 
 vi.mock("@/hooks/useDmp", () => ({
@@ -37,6 +38,10 @@ vi.mock("react-error-boundary", async (importOriginal) => {
 
 vi.mock("@/jspsExport", () => ({
   exportToJspsExcel: mockExportToJspsExcel,
+}))
+
+vi.mock("@/hooks/useProjectInfo", () => ({
+  useProjectInfo: mockUseProjectInfo,
 }))
 
 vi.mock("@/config", () => ({
@@ -129,6 +134,7 @@ describe("DetailProject", () => {
     })
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockReturnValue(undefined)
     mockExportToJspsExcel.mockResolvedValue(new Blob(["test"]))
+    mockUseProjectInfo.mockReturnValue({ isLoading: false, data: null, error: null })
   })
 
   describe("Loading state", () => {
@@ -208,6 +214,116 @@ describe("DetailProject", () => {
       const grdmLink = screen.getByRole("link", { name: /GRDM/i })
       expect(grdmLink).toHaveAttribute("target", "_blank")
       expect(grdmLink).toHaveAttribute("rel", "noopener noreferrer")
+    })
+  })
+
+  describe("Linked GRDM Projects section", () => {
+    it("shows empty-state message when no projects are linked", () => {
+      mockUseDmp.mockReturnValue({ isLoading: false, data: mockDmp, error: null })
+      renderDetailProject()
+      expect(screen.getByText(/GRDM プロジェクトがリンクされていません/)).toBeInTheDocument()
+    })
+
+    it("renders the section title", () => {
+      mockUseDmp.mockReturnValue({ isLoading: false, data: mockDmp, error: null })
+      renderDetailProject()
+      expect(screen.getByText("リンクされている GRDM プロジェクト")).toBeInTheDocument()
+    })
+
+    it("renders a linked project as a link using its title", async () => {
+      mockUseProjectInfo.mockReturnValue({
+        isLoading: false,
+        data: { id: "proj-abc", title: "テストプロジェクト", html: "https://rdm.nii.ac.jp/proj-abc" },
+        error: null,
+      })
+      mockUseDmp.mockReturnValue({
+        isLoading: false,
+        data: { ...mockDmp, linkedGrdmProjects: [{ projectId: "proj-abc" }] },
+        error: null,
+      })
+      renderDetailProject()
+      const link = await screen.findByRole("link", { name: "テストプロジェクト" })
+      expect(link).toBeInTheDocument()
+      expect(link).toHaveAttribute("href", "https://rdm.nii.ac.jp/proj-abc")
+    })
+
+    it("linked project link opens in a new tab", async () => {
+      mockUseProjectInfo.mockReturnValue({
+        isLoading: false,
+        data: { id: "proj-abc", title: "テストプロジェクト", html: "https://rdm.nii.ac.jp/proj-abc" },
+        error: null,
+      })
+      mockUseDmp.mockReturnValue({
+        isLoading: false,
+        data: { ...mockDmp, linkedGrdmProjects: [{ projectId: "proj-abc" }] },
+        error: null,
+      })
+      renderDetailProject()
+      const link = await screen.findByRole("link", { name: "テストプロジェクト" })
+      expect(link).toHaveAttribute("target", "_blank")
+      expect(link).toHaveAttribute("rel", "noopener noreferrer")
+    })
+
+    it("falls back to projectId as link text while loading", () => {
+      mockUseProjectInfo.mockReturnValue({ isLoading: true, data: null, error: null })
+      mockUseDmp.mockReturnValue({
+        isLoading: false,
+        data: { ...mockDmp, linkedGrdmProjects: [{ projectId: "proj-abc" }] },
+        error: null,
+      })
+      renderDetailProject()
+      expect(screen.getByText("読み込み中...")).toBeInTheDocument()
+    })
+
+    it("falls back to projectId as link text when useProjectInfo returns an error", () => {
+      mockUseProjectInfo.mockReturnValue({ isLoading: false, data: null, error: new Error("fetch failed") })
+      mockUseDmp.mockReturnValue({
+        isLoading: false,
+        data: { ...mockDmp, linkedGrdmProjects: [{ projectId: "proj-abc" }] },
+        error: null,
+      })
+      renderDetailProject()
+      expect(screen.getByText("proj-abc")).toBeInTheDocument()
+    })
+
+    it("renders multiple linked projects", async () => {
+      mockUseProjectInfo
+        .mockReturnValueOnce({
+          isLoading: false,
+          data: { id: "proj-001", title: "プロジェクト A", html: "https://rdm.nii.ac.jp/proj-001" },
+          error: null,
+        })
+        .mockReturnValueOnce({
+          isLoading: false,
+          data: { id: "proj-002", title: "プロジェクト B", html: "https://rdm.nii.ac.jp/proj-002" },
+          error: null,
+        })
+      mockUseDmp.mockReturnValue({
+        isLoading: false,
+        data: {
+          ...mockDmp,
+          linkedGrdmProjects: [{ projectId: "proj-001" }, { projectId: "proj-002" }],
+        },
+        error: null,
+      })
+      renderDetailProject()
+      expect(await screen.findByRole("link", { name: "プロジェクト A" })).toBeInTheDocument()
+      expect(await screen.findByRole("link", { name: "プロジェクト B" })).toBeInTheDocument()
+    })
+
+    it("does not show empty-state message when projects are linked", async () => {
+      mockUseProjectInfo.mockReturnValue({
+        isLoading: false,
+        data: { id: "proj-abc", title: "テストプロジェクト", html: "https://rdm.nii.ac.jp/proj-abc" },
+        error: null,
+      })
+      mockUseDmp.mockReturnValue({
+        isLoading: false,
+        data: { ...mockDmp, linkedGrdmProjects: [{ projectId: "proj-abc" }] },
+        error: null,
+      })
+      renderDetailProject()
+      expect(screen.queryByText(/GRDM プロジェクトがリンクされていません/)).not.toBeInTheDocument()
     })
   })
 

@@ -4,6 +4,9 @@ import {
   Button,
   CircularProgress,
   IconButton,
+  Link,
+  List,
+  ListItem,
   Table,
   TableBody,
   TableCell,
@@ -18,15 +21,16 @@ import {
 import { useState } from "react"
 import { useErrorBoundary } from "react-error-boundary"
 import { useTranslation } from "react-i18next"
-import { Link, useParams } from "react-router-dom"
+import { Link as RouterLink, useParams } from "react-router-dom"
 
 import grdmLogoMark from "@/assets/grdm_logo_mark.png"
 import Frame from "@/components/Frame"
 import Loading from "@/components/Loading"
 import OurCard from "@/components/OurCard"
 import { GRDM_CONFIG } from "@/config"
-import type { DataInfo, PersonInfo } from "@/dmp"
+import type { DataInfo, LinkedGrdmProject, PersonInfo } from "@/dmp"
 import { useDmp } from "@/hooks/useDmp"
+import { useProjectInfo } from "@/hooks/useProjectInfo"
 import { exportToJspsExcel } from "@/jspsExport"
 
 // --- Sub-components ---
@@ -132,6 +136,47 @@ function DataInfoTable({ dataList }: { dataList: DataInfo[] }) {
   )
 }
 
+function LinkedGrdmProjectItem({ projectId }: { projectId: string }) {
+  const { t } = useTranslation("detailProject")
+  const projectQuery = useProjectInfo(projectId)
+
+  const href = projectQuery.data?.html ?? `${GRDM_CONFIG.BASE_URL}/${projectId}`
+  let label: string
+  if (projectQuery.isLoading) {
+    label = t("linkedGrdmProjectsSection.loadingProject")
+  } else {
+    label = projectQuery.data?.title ?? projectId
+  }
+
+  return (
+    <ListItem sx={{ py: "0.2rem", pl: 0 }}>
+      <Link href={href} target="_blank" rel="noopener noreferrer" underline="hover">
+        {label}
+      </Link>
+    </ListItem>
+  )
+}
+
+function LinkedGrdmProjectsSection({ projects }: { projects: LinkedGrdmProject[] }) {
+  const { t } = useTranslation("detailProject")
+
+  if (projects.length === 0) {
+    return (
+      <Typography sx={{ color: colors.grey[600], mt: "0.5rem" }}>
+        {t("linkedGrdmProjectsSection.empty")}
+      </Typography>
+    )
+  }
+
+  return (
+    <List dense disablePadding sx={{ mt: "0.5rem" }}>
+      {projects.map((p) => (
+        <LinkedGrdmProjectItem key={p.projectId} projectId={p.projectId} />
+      ))}
+    </List>
+  )
+}
+
 // --- Main page ---
 
 export default function DetailProject() {
@@ -183,7 +228,7 @@ export default function DetailProject() {
           </Typography>
           <Box sx={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
             <Button
-              component={Link}
+              component={RouterLink}
               to={`/projects/${projectId}`}
               variant="contained"
               color="primary"
@@ -244,6 +289,10 @@ export default function DetailProject() {
         {/* 研究データ情報 */}
         <SectionTitle>{t("sections.dataInfo")}</SectionTitle>
         <DataInfoTable dataList={dmp.dataInfo} />
+
+        {/* リンクされている GRDM プロジェクト */}
+        <SectionTitle>{t("sections.linkedGrdmProjects")}</SectionTitle>
+        <LinkedGrdmProjectsSection projects={dmp.linkedGrdmProjects} />
       </OurCard>
     </Frame>
   )
