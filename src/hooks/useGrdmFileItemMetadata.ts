@@ -1,4 +1,4 @@
-import type { GrdmFileItem } from "@hirakinii-packages/grdm-api-typescript"
+import type { GrdmFileItem, GrdmFileMetadataResponse } from "@hirakinii-packages/grdm-api-typescript"
 import { useQuery } from "@tanstack/react-query"
 import { useRecoilValue } from "recoil"
 
@@ -7,6 +7,16 @@ import { tokenAtom } from "@/store/token"
 // Proxy path configured in vite.config.ts to avoid CORS with the GRDM v1 API.
 // The proxy rewrites /grdm-v1-api/* → /api/v1/* on the GRDM host.
 const GRDM_V1_PROXY = "/grdm-v1-api"
+
+/**
+ * Strips the storage provider prefix (e.g. "osfstorage/", "googledrive/") from a
+ * GrdmFileItem path, returning the path relative to the provider root.
+ * If no slash is present the original string is returned unchanged.
+ */
+export const stripProviderPrefix = (path: string): string => {
+  const slashIndex = path.indexOf("/")
+  return slashIndex !== -1 ? path.slice(slashIndex + 1) : path
+}
 
 /**
  * Fetches GRDM file metadata for a specific file by project ID and materialized path.
@@ -31,13 +41,18 @@ export const useGrdmFileItemMetadata = (
       })
       if (!response.ok) throw new Error(`GRDM v1 API error: ${response.status} ${response.statusText}`)
 
-      const data = await response.json()
+      const data: GrdmFileMetadataResponse = await response.json() as GrdmFileMetadataResponse
       const files: GrdmFileItem[] = data?.data?.attributes?.files ?? []
       // GrdmFileItem.path has no leading slash (e.g. "osfstorage/file.csv"),
       // while materialized_path from the OSF v2 API includes one (e.g. "/osfstorage/file.csv").
       // Strip the leading slash before comparing.
       const normalizedPath = filePath.startsWith("/") ? filePath.slice(1) : filePath
-      return files.find((file) => file.path === normalizedPath) ?? null
+      return files.find((file) => {
+        const sourceFilePath: string = file.path.startsWith("/") ? file.path.slice(1) : file.path
+        const providerStrippedFilePath: string = stripProviderPrefix(sourceFilePath)
+        return providerStrippedFilePath === normalizedPath
+      },
+      ) ?? null
     },
     enabled: false,
   })

@@ -141,7 +141,8 @@ const GRDM_FIELD_MAP: GrdmFieldMapping[] = [
 const getGrdmFieldValue = (fileItem: GrdmFileItem, grdmKey: keyof GrdmFileMetadataSchema): string | null => {
   const activeSchema = fileItem.items.find((s) => s.active)
   if (!activeSchema) return null
-  const field = activeSchema[grdmKey] as { value?: unknown } | undefined
+  const schemaData = (activeSchema as Record<string, unknown>)["data"] as Record<string, { value?: unknown }> | undefined
+  const field = schemaData?.[grdmKey as string]
   if (!field?.value) return null
   return String(field.value)
 }
@@ -914,7 +915,16 @@ export default function DataInfoSection({ sx, user, projects }: DataInfoSectionP
               <React.Fragment key={index}>
                 {/* Data row */}
                 <TableRow>
-                  <TableCell children={dataInfo.dataName} sx={{ p: "0.5rem 1rem" }} />
+                  <TableCell
+                    children={dataInfo.dataName}
+                    sx={{
+                      p: "0.5rem 1rem",
+                      maxWidth: { xs: "100%", md: 400 },
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  />
                   <TableCell children={dataInfo.researchField} sx={{ p: "0.5rem 1rem" }} />
                   <TableCell children={dataInfo.dataType} sx={{ p: "0.5rem 1rem" }} />
                   <TableCell sx={{ p: "0.5rem 1rem" }} align="right">
