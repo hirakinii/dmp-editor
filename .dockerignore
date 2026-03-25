@@ -5,6 +5,7 @@
 !package-lock.json
 !package.json
 !README.md
+!docs
 !src
 !tsconfig.app.json
 !tsconfig.json
